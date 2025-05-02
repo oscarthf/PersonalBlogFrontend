@@ -11,7 +11,6 @@ export default function App() {
 
   useEffect(() => {
     const backendUrl = import.meta.env.DEV ? 'http://localhost:5000/posts' : 'http://backend:5000/posts';
-    // const backendUrl = 'http://backend:5000/posts';
     fetch(backendUrl)
       .then(res => res.json())
       .then(setPosts)
