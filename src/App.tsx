@@ -10,7 +10,7 @@ export default function App() {
   const [posts, setPosts] = useState<Post[]>([])
 
   useEffect(() => {
-    const backendUrl = import.meta.env.DEV ? 'http://localhost:5000/posts' : 'http://backend:5000/posts';
+    const backendUrl = import.meta.env.BLOG_DEV ? 'http://localhost:5000/posts' : '/api/posts';
     fetch(backendUrl)
       .then(res => res.json())
       .then(setPosts)
@@ -22,6 +22,9 @@ export default function App() {
       {posts.map(p => (
         <div key={p.id}>
           <h2>{p.title}</h2>
+          <p>{p.id}</p>
+          <p>{p.date}</p>
+          <p>{p.slug}</p>
           <p>{p.content}</p>
         </div>
       ))}
