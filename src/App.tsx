@@ -10,7 +10,7 @@ export default function App() {
   const [posts, setPosts] = useState<Post[]>([])
 
   useEffect(() => {
-    const backendUrl = import.meta.env.BLOG_DEV ? 'http://localhost:5000/posts' : '/api/posts';
+    const backendUrl = import.meta.env.BLOG_DEV ? 'http://localhost:5000/posts' : '/posts'; // '/api/posts';
     fetch(backendUrl)
       .then(res => res.json())
       .then(setPosts)
