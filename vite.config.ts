@@ -8,7 +8,7 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     hmr: {
-      clientPort: 80, // Important for WebSocket through Nginx
+      clientPort: 80,
     },
   },
   preview: {
