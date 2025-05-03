@@ -1,33 +1,20 @@
-import { useEffect, useState } from 'react'
-
-type Post = {
-  id: string
-  title: string
-  content: string
-}
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar'
+import Home from './pages/Home'
+import Blog from './pages/Blog'
+import About from './pages/About'
 
 export default function App() {
-  const [posts, setPosts] = useState<Post[]>([])
-
-  useEffect(() => {
-    const backendUrl = `${import.meta.env.VITE_API_BASE_URL}/posts`;
-    fetch(backendUrl)
-      .then(res => res.json())
-      .then(setPosts)
-  }, [])
-
-  return (
-    <div>
-      <h1>My Blog</h1>
-      {posts.map(p => (
-        <div key={p.id}>
-          <h2>{p.title}</h2>
-          <p>{p.id}</p>
-          <p>{p.date}</p>
-          <p>{p.slug}</p>
-          <p>{p.content}</p>
-        </div>
-      ))}
-    </div>
-  )
+    return (
+        <Router>
+            <Navbar />
+            <div className="container">
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/about" element={<About />} />
+                </Routes>
+            </div>
+        </Router>
+    )
 }
