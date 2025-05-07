@@ -1,19 +1,94 @@
 #version 300 es
 precision highp float;
-out vec4 outColor;
-uniform sampler2D u_data;
+
 in vec2 v_uv;
 
-void main() {
-  vec4 data = texture(u_data, v_uv);
-  vec2 pos = data.xy;
-  vec2 vel = data.zw;
+out vec4 outColor;
 
+uniform sampler2D u_data;
+uniform sampler2D u_distanceMap;
+uniform sampler2D u_dirXMap;
+uniform sampler2D u_dirYMap;
+
+uniform float u_textureSize;
+
+vec4 readParticle(ivec2 index) {
+  vec2 uv = (vec2(index) + 0.5) / u_textureSize;
+  return texture(u_data, uv);
+}
+
+void main() {
+  // Compute own index from UV
+  ivec2 fragIndex = ivec2(v_uv * u_textureSize);
+  vec2 fragUV = (vec2(fragIndex) + 0.5) / u_textureSize;
+
+  vec4 self = texture(u_data, fragUV);
+  vec2 pos = self.xy;
+  vec2 vel = self.zw;
+
+  float maxSpeed = 0.05;
+  if (length(vel) > maxSpeed) {
+    vel = normalize(vel) * maxSpeed;
+  }
+
+  // === FIELD FORCE ===
+  float dist = texture(u_distanceMap, pos).r;
+  vec2 dir = vec2(
+    texture(u_dirXMap, pos).r,
+    texture(u_dirYMap, pos).r
+  );
+
+  // Pull toward/away from black area
+  vec2 force = vec2(0.0);
+  if (length(dir) > 0.0 && dist > 0.0) {
+    force = normalize(dir) * exp(-dist * 20.0);
+  }
+  vel += force * 0.001;
+
+  // === COLLISION AVOIDANCE ===
+  float radius = 0.02;
+  vec2 repulse = vec2(0.0);
+
+  for (int y = 0; y < int(u_textureSize); y++) {
+    for (int x = 0; x < int(u_textureSize); x++) {
+      if (x == fragIndex.x && y == fragIndex.y) continue;
+
+      vec4 other = readParticle(ivec2(x, y));
+      vec2 delta = pos - other.xy;
+      float d = length(delta);
+      if (d > 0.0 && d < radius) {
+        repulse += normalize(delta) * (radius - d);
+      }
+    }
+  }
+
+  vel += repulse * 0.01;
+
+  // === VELOCITY LIMIT / DAMPING ===
+  float speed = length(vel);
+  if (speed > 0.02) {
+    // vel *= 0.98;
+    vel *= 0.5;
+  }
+
+  // === POSITION INTEGRATION ===
   pos += vel;
 
-  if (pos.x < 0.0 || pos.x > 1.0) vel.x *= -1.0;
-  if (pos.y < 0.0 || pos.y > 1.0) vel.y *= -1.0;
-  pos = clamp(pos, 0.0, 1.0);
+  // Bounce off canvas borders
+  if (pos.x < 0.0 || pos.x > 1.0) {
+    vel.x *= -1.0;
+    pos.x = clamp(pos.x, 0.0, 1.0);
+  }
+
+  if (pos.y < 0.0 || pos.y > 1.0) {
+    vel.y *= -1.0;
+    pos.y = clamp(pos.y, 0.0, 1.0);
+  }
+
+  if (!all(lessThan(abs(pos), vec2(1000.0))) || !all(lessThan(abs(vel), vec2(1000.0)))) {
+    pos = vec2(0.5);
+    vel = vec2(0.0);
+  }
 
   outColor = vec4(pos, vel);
 }

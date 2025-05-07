@@ -2,25 +2,21 @@ import { useEffect, useRef } from "react";
 import distanceShaderSrc from "../shaders/distance.frag?raw";
 
 interface Props {
+  gl: WebGL2RenderingContext;
   src: string;
   onResult?: (result: {
     distance: WebGLTexture;
     dirX: WebGLTexture;
     dirY: WebGLTexture;
+    mask: WebGLTexture;
   }) => void;
 }
 
-export default function ImageDistanceField({ src, onResult }: Props) {
+export default function ImageDistanceField({ gl, src, onResult }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
-    if (!gl) {
-      console.error("WebGL2 not supported");
-      return;
-    }
+    if (!gl) return;
 
     const ext = gl.getExtension("EXT_color_buffer_float");
     if (!ext) {
@@ -78,6 +74,8 @@ export default function ImageDistanceField({ src, onResult }: Props) {
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
+
+      const canvas = gl.canvas as HTMLCanvasElement;
       canvas.width = width;
       canvas.height = height;
 
@@ -127,9 +125,10 @@ export default function ImageDistanceField({ src, onResult }: Props) {
         distance: texDist,
         dirX: texDirX,
         dirY: texDirY,
+        mask: sourceTex
       });
     });
-  }, [src]);
+  }, [gl, src]);
 
-  return <canvas ref={canvasRef} style={{ display: "none" }} />;
+  return null; // don't return a canvas, it already exists in the parent
 }

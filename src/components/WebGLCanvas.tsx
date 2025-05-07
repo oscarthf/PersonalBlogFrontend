@@ -1,32 +1,36 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import fullscreenVS from "../shaders/fullscreen.vert?raw";
 import computeFS from "../shaders/compute.frag?raw";
 import renderVS from "../shaders/render.vert?raw";
 import renderFS from "../shaders/render.frag?raw";
+import maskVS from "../shaders/mask.vert?raw";
+import maskFS from "../shaders/mask.frag?raw";
 
-const PARTICLE_COUNT = 1024; // Must be square number for 2D texture (e.g., 32x32)
+const PARTICLE_COUNT = 1024;
 const TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 
-export default function WebGLCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+interface WebGLCanvasProps {
+  gl: WebGL2RenderingContext;
+  distanceMap?: WebGLTexture;
+  dirXMap?: WebGLTexture;
+  dirYMap?: WebGLTexture;
+  maskMap?: WebGLTexture;
+}
 
+export default function WebGLCanvas({
+  gl,
+  distanceMap,
+  dirXMap,
+  dirYMap,
+  maskMap
+}: WebGLCanvasProps) {
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
-    if (!gl) {
-      console.error("WebGL2 not supported");
-      return;
-    }
-
+    const canvas = gl.canvas as HTMLCanvasElement;
     canvas.width = 512;
     canvas.height = 512;
 
-    // ===================
-    // Helper functions
-    // ===================
+    // === Shader helpers ===
     const createShader = (type: number, source: string): WebGLShader => {
       const shader = gl.createShader(type)!;
       gl.shaderSource(shader, source);
@@ -62,11 +66,6 @@ export default function WebGLCanvas() {
 
       const tex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, tex);
-      const ext = gl.getExtension("EXT_color_buffer_float");
-      if (!ext) {
-        console.error("EXT_color_buffer_float not supported");
-        return;
-      }
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size, size, 0, gl.RGBA, gl.FLOAT, data);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -80,17 +79,15 @@ export default function WebGLCanvas() {
       return fb;
     };
 
-    // ===================
-    // Setup Programs
-    // ===================
+    // === Programs ===
     const computeProgram = createProgram(fullscreenVS, computeFS);
     const renderProgram = createProgram(renderVS, renderFS);
+    const maskProgram = createProgram(maskVS, maskFS);
 
-    // Setup quad VAO for compute
+    // === VAOs ===
     const quadVAO = gl.createVertexArray()!;
     gl.bindVertexArray(quadVAO);
 
-    // Setup particle VAO
     const particleVAO = gl.createVertexArray()!;
     gl.bindVertexArray(particleVAO);
 
@@ -107,43 +104,71 @@ export default function WebGLCanvas() {
     gl.enableVertexAttribArray(aIndex);
     gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
 
-    // ===================
-    // Textures & FBOs
-    // ===================
-    const texA = createDataTexture(TEXTURE_SIZE); // initialized with random data
+    // === Simulation Textures ===
+    const texA = createDataTexture(TEXTURE_SIZE);
     const texB = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, texB);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_SIZE, TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
     const fbA = createFramebuffer(texA);
     const fbB = createFramebuffer(texB);
 
-    let readTex = texA, writeTex = texB, readFB = fbA, writeFB = fbB;
+    let readTex = texA,
+        writeTex = texB,
+        readFB = fbA,
+        writeFB = fbB;
 
-    // ===================
-    // Render Loop
-    // ===================
+    // === Render Loop ===
     function renderLoop() {
-      // Compute Step
+      // --- Compute Step ---
       gl.useProgram(computeProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
       gl.viewport(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
       gl.bindVertexArray(quadVAO);
+
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.uniform1i(gl.getUniformLocation(computeProgram, "u_data"), 0);
+
+      if (distanceMap && dirXMap && dirYMap) {
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, distanceMap);
+        gl.uniform1i(gl.getUniformLocation(computeProgram, "u_distanceMap"), 1);
+
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, dirXMap);
+        gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirXMap"), 2);
+
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, dirYMap);
+        gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirYMap"), 3);
+      }
+
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_textureSize"), TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-      // Swap textures
       [readTex, writeTex] = [writeTex, readTex];
       [readFB, writeFB] = [writeFB, readFB];
 
-      // Draw Step
+      // --- Render Pass ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
+
+      // --- Mask Background ---
+      if (maskMap) {
+        gl.useProgram(maskProgram);
+        gl.bindVertexArray(quadVAO);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, maskMap);
+        gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }
+
+      // --- Particle Draw ---
       gl.useProgram(renderProgram);
       gl.bindVertexArray(particleVAO);
       gl.activeTexture(gl.TEXTURE0);
@@ -156,7 +181,7 @@ export default function WebGLCanvas() {
     }
 
     renderLoop();
-  }, []);
+  }, [gl, distanceMap, dirXMap, dirYMap, maskMap]);
 
-  return <canvas ref={canvasRef} />;
+  return null; // no canvas here — it's passed in from parent
 }
