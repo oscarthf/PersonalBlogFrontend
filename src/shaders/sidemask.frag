@@ -15,10 +15,22 @@ void main() {
   vec4 data = texture(u_data, fragUV);
   vec2 pos = data.xy;
 
-  float left = pos.x < radius ? 1.0 : 0.0;
-  float right = pos.x > (1.0 - radius) ? 1.0 : 0.0;
-  float top = pos.y > (1.0 - radius) ? 1.0 : 0.0;
-  float bottom = pos.y < radius ? 1.0 : 0.0;
+  float cell_x = floor(pos.x / radius);
+  float cell_y = floor(pos.y / radius);
 
-  outColor = vec4(left, right, top, bottom);
+  float left_right_mark = 0.5;
+  if (pos.x < radius) {
+    left_right_mark = 0.0;
+  } else if (pos.x > u_textureSize - radius) {
+    left_right_mark = 1.0;
+  }
+  float up_down_mark = 0.5;
+  if (pos.y < radius) {
+    up_down_mark = 0.0;
+  } else if (pos.y > u_textureSize - radius) {
+    up_down_mark = 1.0;
+  }
+
+  outColor = vec4(cell_x, cell_y, left_right_mark, up_down_mark);
+
 }

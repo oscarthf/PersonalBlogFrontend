@@ -93,10 +93,22 @@ void main() {
   vec2 repulse = vec2(0.0);
 
   vec4 sideMask = texture(u_sideMask, fragUV);
-  bool isOnLeftSide = sideMask.r > 0.5;
-  bool isOnRightSide = sideMask.g > 0.5;
-  bool isOnTopSide = sideMask.b > 0.5;
-  bool isOnBottomSide = sideMask.a > 0.5;
+  // bool isOnLeftSide = sideMask.r > 0.5;
+  // bool isOnRightSide = sideMask.g > 0.5;
+  // bool isOnTopSide = sideMask.b > 0.5;
+  // bool isOnBottomSide = sideMask.a > 0.5;
+  float cell_x = sideMask.r;
+  float cell_y = sideMask.g;
+  float left_right_mark = sideMask.b;
+  float up_down_mark = sideMask.a;
+
+  bool isOnLeftSide = left_right_mark < 0.25;
+  bool isOnRightSide = left_right_mark > 0.75;
+  bool isOnTopSide = up_down_mark < 0.25;
+  bool isOnBottomSide = up_down_mark > 0.75;
+
+  int cell_width = (int(u_textureSize) / int(radius)) + 1;
+  int cell_height = (int(u_textureSize) / int(radius)) + 1;
 
   for (int y = 0; y < int(u_textureSize); y++) {
     for (int x = 0; x < int(u_textureSize); x++) {
@@ -108,10 +120,26 @@ void main() {
       vec2 other_pos = other.xy;
 
       vec4 otherSideMask = getSideMask(ivec2(x, y));
-      bool other_isOnLeftSide = otherSideMask.r > 0.5;
-      bool other_isOnRightSide = otherSideMask.g > 0.5;
-      bool other_isOnTopSide = otherSideMask.b > 0.5;
-      bool other_isOnBottomSide = otherSideMask.a > 0.5;
+
+      float other_cell_x = otherSideMask.r;
+      float other_cell_y = otherSideMask.g;
+
+      float cell_dist_x = abs(cell_x - other_cell_x);
+      float cell_dist_y = abs(cell_y - other_cell_y);
+      if (cell_dist_x > 2.5 && cell_dist_x < float(cell_width) - 2.5) {
+        continue;
+      }
+      if (cell_dist_y > 2.5 && cell_dist_y < float(cell_height) - 2.5) {
+        continue;
+      }
+
+      float other_left_right_mark = otherSideMask.b;
+      float other_up_down_mark = otherSideMask.a;
+
+      bool other_isOnLeftSide = other_left_right_mark < 0.25;
+      bool other_isOnRightSide = other_left_right_mark > 0.75;
+      bool other_isOnTopSide = other_up_down_mark < 0.25;
+      bool other_isOnBottomSide = other_up_down_mark > 0.75;
 
       vec2 delta = pos - other_pos;
       
