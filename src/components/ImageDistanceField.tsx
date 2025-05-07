@@ -5,6 +5,7 @@ import fullscreenVS from "../shaders/fullscreen.vert?raw";
 interface Props {
   gl: WebGL2RenderingContext;
   src: string;
+  radius: number;
   onResult?: (result: {
     distance: WebGLTexture;
     dirX: WebGLTexture;
@@ -13,7 +14,12 @@ interface Props {
   }) => void;
 }
 
-export default function ImageDistanceField({ gl, src, onResult }: Props) {
+export default function ImageDistanceField({ 
+  gl, 
+  src, 
+  radius,
+  onResult 
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -108,7 +114,7 @@ export default function ImageDistanceField({ gl, src, onResult }: Props) {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, sourceTex);
       gl.uniform1i(gl.getUniformLocation(program, "u_source"), 0);
-      gl.uniform1f(gl.getUniformLocation(program, "u_radius"), 30.0);
+      gl.uniform1i(gl.getUniformLocation(program, "u_radius"), radius);
       gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), width, height);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 

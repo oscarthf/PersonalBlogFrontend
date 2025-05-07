@@ -8,8 +8,9 @@ import maskVS from "../shaders/mask.vert?raw";
 import maskFS from "../shaders/mask.frag?raw";
 import sidemaskFS from "../shaders/sidemask.frag?raw";
 
-const PARTICLE_COUNT = 1024;
-const TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
+// const PARTICLE_COUNT = 1024;
+const PARTICLE_COUNT = 324;
+const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const CANVAS_SIZE = 512;
 const INITIAL_ROCK_X = 0.4;
 const INITIAL_ROCK_Y = 0.4;
@@ -22,6 +23,7 @@ interface WebGLCanvasProps {
   dirXMap?: WebGLTexture;
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
+  radius: number;
 }
 
 export default function WebGLCanvas({
@@ -29,9 +31,14 @@ export default function WebGLCanvas({
   distanceMap,
   dirXMap,
   dirYMap,
-  maskMap
+  maskMap,
+  radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
+
+    let lastTime = performance.now();
+    let frames = 0;
+    let fps = 0;
 
     const canvas = gl.canvas as HTMLCanvasElement;
     canvas.width = CANVAS_SIZE;
@@ -44,6 +51,10 @@ export default function WebGLCanvas({
 
     const dragging = { current: false };
     const offset = { x: 0, y: 0 };
+    
+    // // Test if this helps:
+    // gl.enable(gl.BLEND);
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     // Convert canvas coordinates to normalized 0–1
     function getMousePos(evt: MouseEvent): { x: number; y: number } {
@@ -138,22 +149,17 @@ export default function WebGLCanvas({
     // === Framebuffer for side mask ===
     const sideMaskTex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_SIZE, TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     const sideMaskFB = createFramebuffer(sideMaskTex);
 
     // === VAOs ===
-    const quadVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(quadVAO);
-
-    const particleVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(particleVAO);
 
     const indices = new Float32Array(PARTICLE_COUNT * 2);
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      indices[i * 2 + 0] = i % TEXTURE_SIZE;
-      indices[i * 2 + 1] = Math.floor(i / TEXTURE_SIZE);
+      indices[i * 2 + 0] = i % PARTICLE_TEXTURE_SIZE;
+      indices[i * 2 + 1] = Math.floor(i / PARTICLE_TEXTURE_SIZE);
     }
 
     const indexBuffer = gl.createBuffer()!;
@@ -164,10 +170,10 @@ export default function WebGLCanvas({
     gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
 
     // === Simulation Textures ===
-    const texA = createDataTexture(TEXTURE_SIZE);
+    const texA = createDataTexture(PARTICLE_TEXTURE_SIZE);
     const texB = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, texB);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_SIZE, TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
@@ -179,29 +185,78 @@ export default function WebGLCanvas({
         readFB = fbA,
         writeFB = fbB;
 
+
+    // === Fullscreen VAO (for compute/mask) ===
+    const fullscreenVerts = new Float32Array([
+      -1, -1,  1, -1, -1,  1,
+      -1,  1,  1, -1,  1,  1,
+    ]);
+
+    const fullscreenVBO = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, fullscreenVerts, gl.STATIC_DRAW);
+
+    const fullscreenVAO = gl.createVertexArray()!;
+    gl.bindVertexArray(fullscreenVAO);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+
+    // === Sprite Quad (used for instanced rendering) ===
+    const quadVerts = new Float32Array([
+      -0.01, -0.01,
+      0.01, -0.01,
+      -0.01,  0.01,
+      -0.01,  0.01,
+      0.01, -0.01,
+      0.01,  0.01,
+    ]);
+
+    const quadVBO = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+    
+    // === Sprite VAO ===
+    const spriteVAO = gl.createVertexArray()!;
+    gl.bindVertexArray(spriteVAO);
+
+    // a_quadPos: per-vertex quad position
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); // layout(location = 0)
+    gl.vertexAttribDivisor(0, 0); // per-vertex
+
+    // a_index: per-instance texture index
+    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer); // already contains particle indices
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0); // layout(location = 1)
+    gl.vertexAttribDivisor(1, 1); // per-instance
+
+    gl.bindVertexArray(null); // unbind when done
+
     // === Render Loop ===
     function renderLoop() {
       
       // --- Side Mask Pass ---
       gl.useProgram(sideMaskProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, sideMaskFB);
-      gl.viewport(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-      gl.bindVertexArray(quadVAO);
+      gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
+      gl.bindVertexArray(fullscreenVAO);
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "radius"), 0.2); // same radius as in sim
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_textureSize"), TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "radius"), parseFloat(radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSize"), CANVAS_SIZE);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-
 
       // --- Compute Step ---
       gl.useProgram(computeProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
-      gl.viewport(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-      gl.bindVertexArray(quadVAO);
+      gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
+      gl.bindVertexArray(fullscreenVAO);
 
       gl.activeTexture(gl.TEXTURE4);
       gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
@@ -230,7 +285,9 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h);
 
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_textureSize"), TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_radius"), parseFloat(radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       [readTex, writeTex] = [writeTex, readTex];
@@ -242,10 +299,11 @@ export default function WebGLCanvas({
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
+
       // --- Mask Background ---
       if (maskMap) {
         gl.useProgram(maskProgram);
-        gl.bindVertexArray(quadVAO);
+        gl.bindVertexArray(fullscreenVAO);
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_2D, maskMap);
         gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
@@ -256,16 +314,30 @@ export default function WebGLCanvas({
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
 
-      // --- Particle Draw ---
+      
+      // --- Render Particles ---
       gl.useProgram(renderProgram);
-      gl.bindVertexArray(particleVAO);
+      gl.bindVertexArray(spriteVAO);
+
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), TEXTURE_SIZE);
-      gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+
+      // --- Track FPS ---
+      frames++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fps = frames;
+        frames = 0;
+        lastTime = now;
+        console.log("FPS:", fps); // or use this value in a state update
+      }
 
       requestAnimationFrame(renderLoop);
+
     }
 
     renderLoop();

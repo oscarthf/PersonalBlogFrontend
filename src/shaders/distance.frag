@@ -3,7 +3,7 @@ precision highp float;
 
 in vec2 v_uv;
 uniform sampler2D u_source;
-uniform float u_radius;
+uniform int u_radius;
 uniform vec2 u_resolution;
 
 layout(location = 0) out float outDistance;
@@ -12,7 +12,6 @@ layout(location = 2) out float outDirY;
 
 void main() {
   vec2 texelSize = 1.0 / u_resolution;
-  int mask_force_radius = 30;
   vec2 origin = v_uv;
   float minDist = 1e10;
   vec2 bestOffset = vec2(0.0);
@@ -23,8 +22,8 @@ void main() {
     centerPixelWasBlack = true;
   }
 
-  for (int dy = -mask_force_radius; dy <= mask_force_radius; dy++) {
-    for (int dx = -mask_force_radius; dx <= mask_force_radius; dx++) {
+  for (int dy = -u_radius; dy <= u_radius; dy++) {
+    for (int dx = -u_radius; dx <= u_radius; dx++) {
       if (dx == 0 && dy == 0) {
         continue; // Skip the center pixel
       }
@@ -36,7 +35,7 @@ void main() {
         continue; // Skip pixels outside the texture bounds
       }
       float currentDistance = length(vec2(float(dx), float(dy)));
-      if (currentDistance > float(mask_force_radius)) {
+      if (currentDistance > float(u_radius)) {
         continue; // Skip pixels outside the force radius
       }
       float pixel = texture(u_source, sampleUV).r;
