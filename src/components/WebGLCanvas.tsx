@@ -31,10 +31,45 @@ export default function WebGLCanvas({
     canvas.width = 512;
     canvas.height = 512;
 
-    const rock_x = 0.4;
-    const rock_y = 0.4;
+    let rock_x = 0.4;
+    let rock_y = 0.4;
     const rock_w = 0.2;
     const rock_h = 0.2;
+
+    const dragging = { current: false };
+    const offset = { x: 0, y: 0 };
+
+    // Convert canvas coordinates to normalized 0–1
+    function getMousePos(evt: MouseEvent): { x: number; y: number } {
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.clientX - rect.left) / rect.width;
+      const y = 1 - (evt.clientY - rect.top) / rect.height;
+      return { x, y };
+    }
+
+    function onMouseDown(evt: MouseEvent) {
+      const { x, y } = getMousePos(evt);
+      if (
+        x >= rock_x && x <= rock_x + rock_w &&
+        y >= rock_y && y <= rock_y + rock_h
+      ) {
+        dragging.current = true;
+        offset.x = x - rock_x;
+        offset.y = y - rock_y;
+      }
+    }
+
+    function onMouseMove(evt: MouseEvent) {
+      if (dragging.current) {
+        const { x, y } = getMousePos(evt);
+        rock_x = x - offset.x;
+        rock_y = y - offset.y;
+      }
+    }
+
+    function onMouseUp() {
+      dragging.current = false;
+    }
 
     // === Shader helpers ===
     const createShader = (type: number, source: string): WebGLShader => {
@@ -196,6 +231,19 @@ export default function WebGLCanvas({
     }
 
     renderLoop();
+    
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("mouseleave", onMouseUp);
+    
+    // 👇 Cleanup when component unmounts or gl changes
+    return () => {
+      canvas.removeEventListener("mousedown", onMouseDown);
+      canvas.removeEventListener("mousemove", onMouseMove);
+      canvas.removeEventListener("mouseup", onMouseUp);
+    };
+
   }, [gl, distanceMap, dirXMap, dirYMap, maskMap]);
 
   return null; // no canvas here — it's passed in from parent
