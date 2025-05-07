@@ -147,6 +147,27 @@ export default function WebGLCanvas({
     const maskProgram = createProgram(maskVS, maskFS);
     const sideMaskProgram = createProgram(fullscreenVS, sidemaskFS);
 
+    // === Textures ===
+    
+    const spriteImage = new Image();
+    let spriteTex: WebGLTexture;
+    spriteImage.src = "/particle.png";
+    let spriteReady = false;
+    spriteImage.onload = () => {
+      spriteTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, spriteImage);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      
+      // save for use later during render
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
+      spriteReady = true;
+    };
+
     // === Framebuffer for side mask ===
     const sideMaskTex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
@@ -169,6 +190,40 @@ export default function WebGLCanvas({
     const aIndex = gl.getAttribLocation(renderProgram, "a_index");
     gl.enableVertexAttribArray(aIndex);
     gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
+
+    // new sprite code
+
+    let sprite_quad_size = 0.04;
+    const quadVerts = new Float32Array([
+      -sprite_quad_size, -sprite_quad_size,
+      sprite_quad_size, -sprite_quad_size,
+      -sprite_quad_size,  sprite_quad_size,
+      -sprite_quad_size,  sprite_quad_size,
+      sprite_quad_size, -sprite_quad_size,
+      sprite_quad_size,  sprite_quad_size,
+    ]);
+
+    const quadVBO = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+
+    const spriteVAO = gl.createVertexArray()!;
+    gl.bindVertexArray(spriteVAO);
+
+    // layout(location = 0) - quad vertex positions
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0); // per-vertex
+
+    // layout(location = 1) - texture index lookup
+    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(1, 1); // per-instance
+
+    gl.bindVertexArray(null);
+
 
     // === Simulation Textures ===
     const texA = createDataTexture(PARTICLE_TEXTURE_SIZE);
@@ -204,23 +259,6 @@ export default function WebGLCanvas({
 
 
     // === Sprite Quad (used for instanced rendering) ===
-    let sprite_quad_size = 0.1;
-    const quadVerts = new Float32Array([
-      -sprite_quad_size, -sprite_quad_size,
-      sprite_quad_size, -sprite_quad_size,
-      -sprite_quad_size,  sprite_quad_size,
-      -sprite_quad_size,  sprite_quad_size,
-      sprite_quad_size, -sprite_quad_size,
-      sprite_quad_size,  sprite_quad_size,
-    ]);
-
-    const quadVBO = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
-    
-    // === Sprite VAO ===
-    const spriteVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(spriteVAO);
 
     // a_quadPos: per-vertex quad position
     gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
@@ -238,6 +276,10 @@ export default function WebGLCanvas({
 
     // === Render Loop ===
     function renderLoop() {
+      if (!spriteReady) {
+        requestAnimationFrame(renderLoop);
+        return;
+      }
       
       // --- Side Mask Pass ---
       gl.useProgram(sideMaskProgram);
@@ -316,7 +358,10 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_h"), rock_h);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
-
+      
+      // --- Enable Blending ---
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
       // --- Render Particles ---
       gl.useProgram(renderProgram);
@@ -325,9 +370,21 @@ export default function WebGLCanvas({
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_sprite"), 1);
 
+      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_particle_radius"), sprite_quad_size);
+      
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+
+      // --- Disable Blending ---
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
       // --- Track FPS ---
       frames++;

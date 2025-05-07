@@ -4,8 +4,13 @@ precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
 
+uniform sampler2D u_sprite;
+
 void main() {
-  float d = length(v_uv - 0.5);
-  float alpha = smoothstep(0.5, 0.45, d);
-  outColor = vec4(1.0, 1.0, 1.0, alpha); // white glow
+  vec4 color = texture(u_sprite, v_uv);
+
+  // // Discard transparent pixels (for soft edges)
+  // if (color.a < 0.1) discard;
+
+  outColor = color;
 }

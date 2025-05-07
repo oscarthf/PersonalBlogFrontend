@@ -6,6 +6,7 @@ layout(location = 1) in vec2 a_index;     // particle tex coords
 
 uniform sampler2D u_data;
 uniform float u_size;
+uniform float u_particle_radius; // 0.01
 
 out vec2 v_uv;
 
@@ -15,6 +16,6 @@ void main() {
   vec4 data = texture(u_data, uv);
   vec2 pos = data.xy;
 
-  v_uv = a_quadPos * 0.5 + 0.5; // for circular mask
+  v_uv = ((a_quadPos / u_particle_radius) + 1.0) * 0.5;
   gl_Position = vec4(pos * 2.0 - 1.0 + a_quadPos, 0.0, 1.0);
 }
