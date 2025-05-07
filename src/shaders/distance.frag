@@ -12,25 +12,37 @@ layout(location = 2) out float outDirY;
 
 void main() {
   vec2 texelSize = 1.0 / u_resolution;
+  int mask_force_radius = 30;
   vec2 origin = v_uv;
   float minDist = 1e10;
   vec2 bestOffset = vec2(0.0);
+  bool centerPixelWasBlack = false;
 
   float center = texture(u_source, origin).r;
   if (center < 0.5) {
-    outDistance = 0.0;
-    outDirX = 0.0;
-    outDirY = 0.0;
-    return;
+    centerPixelWasBlack = true;
   }
 
-  for (int dy = -30; dy <= 30; dy++) {
-    for (int dx = -30; dx <= 30; dx++) {
+  for (int dy = -mask_force_radius; dy <= mask_force_radius; dy++) {
+    for (int dx = -mask_force_radius; dx <= mask_force_radius; dx++) {
+      if (dx == 0 && dy == 0) {
+        continue; // Skip the center pixel
+      }
+      // Sample the texture at the offset position
       vec2 offset = vec2(float(dx), float(dy)) * texelSize;
       vec2 sampleUV = origin + offset;
-      if (any(lessThan(sampleUV, vec2(0.0))) || any(greaterThan(sampleUV, vec2(1.0)))) continue;
+      if (any(lessThan(sampleUV, vec2(0.0))) || 
+          any(greaterThan(sampleUV, vec2(1.0)))) {
+        continue; // Skip pixels outside the texture bounds
+      }
+      float currentDistance = length(vec2(float(dx), float(dy)));
+      if (currentDistance > float(mask_force_radius)) {
+        continue; // Skip pixels outside the force radius
+      }
       float pixel = texture(u_source, sampleUV).r;
-      if (pixel < 0.5) {
+      bool samplePixelIsBlack = pixel < 0.5;
+      if ((centerPixelWasBlack && !samplePixelIsBlack) || 
+          (!centerPixelWasBlack && samplePixelIsBlack)) {
         float dist = length(offset);
         if (dist < minDist) {
           minDist = dist;
@@ -38,6 +50,10 @@ void main() {
         }
       }
     }
+  }
+
+  if (centerPixelWasBlack) {
+    minDist = -minDist;
   }
 
   outDistance = minDist;

@@ -33,6 +33,11 @@ void main() {
 
   // === FIELD FORCE ===
   float dist = texture(u_distanceMap, pos).r;
+  bool isBlack = false;
+  if (dist < 0.0) {
+    isBlack = true;
+  }
+
   vec2 dir = vec2(
     texture(u_dirXMap, pos).r,
     texture(u_dirYMap, pos).r
@@ -40,13 +45,19 @@ void main() {
 
   // Pull toward/away from black area
   vec2 force = vec2(0.0);
-  if (length(dir) > 0.0 && dist > 0.0) {
-    force = normalize(dir) * exp(-dist * 20.0);
+  if (length(dir) > 0.0 && dist != 0.0) {
+    if (isBlack) {
+      force = normalize(dir) * exp(dist * 20.0);
+    } else {
+      force = -normalize(dir) * exp(-dist * 20.0);
+    }
   }
-  vel += force * 0.001;
+
+  vel += force * 0.01;
 
   // === COLLISION AVOIDANCE ===
-  float radius = 0.02;
+  float repulse_force = 0.1;
+  float radius = 0.2;
   vec2 repulse = vec2(0.0);
 
   for (int y = 0; y < int(u_textureSize); y++) {
@@ -57,7 +68,7 @@ void main() {
       vec2 delta = pos - other.xy;
       float d = length(delta);
       if (d > 0.0 && d < radius) {
-        repulse += normalize(delta) * (radius - d);
+        repulse += normalize(delta) * (radius - d) * repulse_force;
       }
     }
   }
@@ -68,7 +79,7 @@ void main() {
   float speed = length(vel);
   if (speed > 0.02) {
     // vel *= 0.98;
-    vel *= 0.5;
+    vel *= 0.1;
   }
 
   // === POSITION INTEGRATION ===
