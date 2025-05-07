@@ -23,7 +23,9 @@ vec4 readParticle(ivec2 index) {
 }
 
 void main() {
+
   // Compute own index from UV
+  
   ivec2 fragIndex = ivec2(v_uv * u_textureSize);
   vec2 fragUV = (vec2(fragIndex) + 0.5) / u_textureSize;
 
@@ -50,35 +52,27 @@ void main() {
   scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_w;
   scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_h;
 
-  if (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0 && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0) {
+  bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0
+                       && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
+  
+  if (isInsideRock) {
     dist = texture(u_distanceMap, scaled_rock_pos).r;
     dir.x = texture(u_dirXMap, scaled_rock_pos).r;
     dir.y = texture(u_dirYMap, scaled_rock_pos).r;
-  }
+      
+    // === COLLISION WITH BLACK SHAPE ===
 
-  // // === FIELD FORCE ===
-  // bool isBlack = dist < 0.0;
+    vec2 normal = normalize(dir);
 
-  // vec2 normal = normalize(dir);
+    if (dist < 0.0 && length(normal) > 0.0) {
+      // Reflect velocity to bounce
+      vel = reflect(vel, normal);
 
-  // if (isBlack && length(normal) > 0.0) {
-  //   // Reflect the velocity if inside the shape (i.e., collision)
-  //   vel = reflect(vel, normal);
+      // Push particle just outside the surface to avoid sticking
+      float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
+      pos += normal * pushOutDist;
+    }
 
-  //   // Optional: move it just outside to prevent sticking
-  //   pos += normal * (0.002 - dist); // Small nudge out of shape
-  // }
-
-  // === COLLISION WITH BLACK SHAPE ===
-  vec2 normal = normalize(dir);
-
-  if (dist < 0.0 && length(normal) > 0.0) {
-    // Reflect velocity to bounce
-    vel = reflect(vel, normal);
-
-    // Push particle just outside the surface to avoid sticking
-    float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
-    pos += normal * pushOutDist;
   }
 
   // === COLLISION AVOIDANCE ===
@@ -89,14 +83,66 @@ void main() {
 
   for (int y = 0; y < int(u_textureSize); y++) {
     for (int x = 0; x < int(u_textureSize); x++) {
+
       if (x == fragIndex.x && y == fragIndex.y) continue;
 
       vec4 other = readParticle(ivec2(x, y));
-      vec2 delta = pos - other.xy;
-      float d = length(delta);
-      if (d > 0.0 && d < radius) {
-        repulse += normalize(delta) * (radius - d) * repulse_force;
+
+      vec2 other_pos = other.xy;
+      vec2 delta = pos - other_pos;
+      
+      if (abs(delta.x) < radius || abs(delta.y) < radius) {
+        // Check if the distance is less than the radius
+        float d = length(delta);
+        if (d > 0.0 && d < radius) {
+          repulse += normalize(delta) * (radius - d) * repulse_force;
+        }
       }
+
+      // check if is on the left side of the screen
+      if (other_pos.x < radius) {
+        // check for wrapped particles on the right side of the screen
+        vec2 wrapped_pos = other_pos + vec2(1.0, 0.0);
+        vec2 delta = pos - wrapped_pos;
+        if (abs(delta.x) < radius || abs(delta.y) < radius) {
+          // Check if the distance is less than the radius
+          float d = length(delta);
+          if (d > 0.0 && d < radius) {
+            repulse += normalize(delta) * (radius - d) * repulse_force;
+          }
+        }
+      }
+
+      // check if is on the right side of the screen
+      if (other_pos.x > 1.0 - radius) {
+        // check for wrapped particles on the left side of the screen
+        vec2 wrapped_pos = other_pos - vec2(1.0, 0.0);
+        vec2 delta = pos - wrapped_pos;
+        if (abs(delta.x) < radius || abs(delta.y) < radius) {
+          // Check if the distance is less than the radius
+          float d = length(delta);
+          if (d > 0.0 && d < radius) {
+            repulse += normalize(delta) * (radius - d) * repulse_force;
+          }
+        }
+      }
+
+      
+
+      // for (int wrap_x = -1; wrap_x < 2; wrap_x++) {
+      //   for (int wrap_y = -1; wrap_y < 2; wrap_y++) {
+      //     vec2 wrapped_pos = other.xy + vec2(float(wrap_x), float(wrap_y));
+      //     vec2 delta = pos - wrapped_pos;
+      //     if (abs(delta.x) > radius) continue;
+      //     if (abs(delta.y) > radius) continue;
+      //     // Check if the distance is less than the radius
+      //     float d = length(delta);
+      //     if (d > 0.0 && d < radius) {
+      //       repulse += normalize(delta) * (radius - d) * repulse_force;
+      //     }
+      //   }
+      // }
+
     }
   }
 
@@ -110,19 +156,22 @@ void main() {
 
   pos += vel;
 
-  // Bounce off canvas borders
-  if (pos.x < 0.0 || pos.x > 1.0) {
-    vel.x *= -1.0;
-    pos.x = clamp(pos.x, 0.0, 1.0);
+  // === BOUNDING BOX ===
+
+  // Wrap around the screen
+
+  if (pos.x < 0.0) {
+    pos.x += 1.0;
   }
 
-  // if (pos.y < 0.0 || pos.y > 1.0) {
-  //   vel.y *= -1.0;
-  //   pos.y = clamp(pos.y, 0.0, 1.0);
-  // }
+  if (pos.x > 1.0) {
+    pos.x -= 1.0;
+  }
+
   if (pos.y < 0.0) {
     pos.y += 1.0;
   }
+
   if (pos.y > 1.0) {
     pos.y -= 1.0;
   }
