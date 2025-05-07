@@ -20,6 +20,10 @@ uniform float rock_y;
 uniform float rock_w;
 uniform float rock_h;
 
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 vec4 readParticle(ivec2 index) {
   vec2 uv = (vec2(index) + 0.5) / u_particleTextureSize;
   return texture(u_data, uv);
@@ -75,6 +79,9 @@ void main() {
     dist = texture(u_distanceMap, scaled_rock_pos).r;
     dir.x = texture(u_dirXMap, scaled_rock_pos).r;
     dir.y = texture(u_dirYMap, scaled_rock_pos).r;
+
+    dir.x *= rock_w;
+    dir.y *= rock_h;
       
     // === COLLISION WITH BLACK SHAPE ===
 
@@ -84,16 +91,18 @@ void main() {
       // Reflect velocity to bounce
       vel = reflect(vel, normal);
 
+      dist = length(dir);
+
       // Push particle just outside the surface to avoid sticking
       float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
-      pos += normal * pushOutDist;
+      pos -= normal * pushOutDist;
     }
 
   }
 
   // === COLLISION AVOIDANCE ===
 
-  float repulse_force = 10.0;
+  float repulse_force = 100.0;
   float radius = u_radius / u_canvasSize;
   float radius_squared = radius * radius;
   vec2 repulse = vec2(0.0);
@@ -121,6 +130,9 @@ void main() {
       vec4 other = readParticle(ivec2(x, y));
 
       vec2 other_pos = other.xy;
+
+      other_pos.x *= u_canvasSize;
+      other_pos.y *= u_canvasSize;
 
       vec4 otherSideMask = getSideMask(ivec2(x, y));
 
@@ -186,40 +198,40 @@ void main() {
         }
       }
 
-      // check if is on the top side of the screen
-      if (other_isOnTopSide && isOnBottomSide) {
-        // check for wrapped particles on the bottom side of the screen
-        vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSize);
-        vec2 delta = pos - wrapped_pos;
-        if (abs(delta.x) < radius || abs(delta.y) < radius) {
-          // Check if the distance is less than the radius
-          float d_squared = lengthSquared(delta);
-          if (d_squared > 0.0 && d_squared < radius_squared) {
-            float d = sqrt(d_squared);
-            repulse += normalize(delta) * (radius - d) * repulse_force;
-          }
-        }
-      }
+      // // check if is on the top side of the screen
+      // if (other_isOnTopSide && isOnBottomSide) {
+      //   // check for wrapped particles on the bottom side of the screen
+      //   vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSize);
+      //   vec2 delta = pos - wrapped_pos;
+      //   if (abs(delta.x) < radius || abs(delta.y) < radius) {
+      //     // Check if the distance is less than the radius
+      //     float d_squared = lengthSquared(delta);
+      //     if (d_squared > 0.0 && d_squared < radius_squared) {
+      //       float d = sqrt(d_squared);
+      //       repulse += normalize(delta) * (radius - d) * repulse_force;
+      //     }
+      //   }
+      // }
       
-      // check if is on the bottom side of the screen
-      if (other_isOnBottomSide && isOnTopSide) {
-        // check for wrapped particles on the top side of the screen
-        vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSize);
-        vec2 delta = pos - wrapped_pos;
-        if (abs(delta.x) < radius || abs(delta.y) < radius) {
-          // Check if the distance is less than the radius
-          float d_squared = lengthSquared(delta);
-          if (d_squared > 0.0 && d_squared < radius_squared) {
-            float d = sqrt(d_squared);
-            repulse += normalize(delta) * (radius - d) * repulse_force;
-          }
-        }
-      }
+      // // check if is on the bottom side of the screen
+      // if (other_isOnBottomSide && isOnTopSide) {
+      //   // check for wrapped particles on the top side of the screen
+      //   vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSize);
+      //   vec2 delta = pos - wrapped_pos;
+      //   if (abs(delta.x) < radius || abs(delta.y) < radius) {
+      //     // Check if the distance is less than the radius
+      //     float d_squared = lengthSquared(delta);
+      //     if (d_squared > 0.0 && d_squared < radius_squared) {
+      //       float d = sqrt(d_squared);
+      //       repulse += normalize(delta) * (radius - d) * repulse_force;
+      //     }
+      //   }
+      // }
 
     }
   }
 
-  vel += repulse * 0.01;
+  vel += repulse;
 
   // === DAMPING ===
 
@@ -232,7 +244,13 @@ void main() {
   // === BOUNDING BOX ===
   
   pos.x = mod(mod(pos.x, u_canvasSize) + u_canvasSize, u_canvasSize);
-  pos.y = mod(mod(pos.y, u_canvasSize) + u_canvasSize, u_canvasSize);
+  // pos.y = mod(mod(pos.y, u_canvasSize) + u_canvasSize, u_canvasSize);
+
+  if (pos.y < 0.0) {
+    pos.y = float(u_canvasSize);
+    // set pos x to a random value between 0 and canvas size
+    pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSize;
+  }
 
   // === SCALE BACK TO 0 - 1
 

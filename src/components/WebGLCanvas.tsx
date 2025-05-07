@@ -52,7 +52,6 @@ export default function WebGLCanvas({
     const dragging = { current: false };
     const offset = { x: 0, y: 0 };
     
-    // // Test if this helps:
     // gl.enable(gl.BLEND);
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -280,10 +279,10 @@ export default function WebGLCanvas({
         gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirYMap"), 3);
       }
 
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x * CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y * CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_radius"), parseFloat(radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
