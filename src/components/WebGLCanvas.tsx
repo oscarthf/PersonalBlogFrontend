@@ -100,8 +100,11 @@ export default function WebGLCanvas({
       for (let i = 0; i < size * size; i++) {
         const x = Math.random();
         const y = Math.random();
-        const vx = (Math.random() - 0.5) * 0.01;
-        const vy = (Math.random() - 0.5) * 0.01;
+        // const vx = (Math.random() - 0.5) * 0.01;
+        // const vy = (Math.random() - 0.5) * 0.01;
+        const random_angle = Math.random() * Math.PI / 8 - Math.PI / 16;
+        const vx = Math.sin(random_angle) * 0.01;
+        const vy = -Math.cos(random_angle) * 0.01;
         data.set([x, y, vx, vy], i * 4);
       }
 
@@ -193,7 +196,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_textureSize"), TEXTURE_SIZE);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       [readTex, writeTex] = [writeTex, readTex];
       [readFB, writeFB] = [writeFB, readFB];

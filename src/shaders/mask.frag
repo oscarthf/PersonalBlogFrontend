@@ -7,6 +7,10 @@ uniform sampler2D u_mask;
 out vec4 outColor;
 
 void main() {
-  float v = texture(u_mask, v_uv).r; // Sample grayscale intensity
-  outColor = vec4(vec3(v), 0.2);     // Gray with alpha for blending
+  float v = texture(u_mask, v_uv).r;
+  if (v > 0.5) {
+    outColor = vec4(0.0, 0.0, 0.0, 1.0);
+  } else {
+    outColor = vec4(0.3, 0.6, 0.9, 1.0);
+  }
 }

@@ -110,7 +110,7 @@ export default function ImageDistanceField({ gl, src, onResult }: Props) {
       gl.uniform1i(gl.getUniformLocation(program, "u_source"), 0);
       gl.uniform1f(gl.getUniformLocation(program, "u_radius"), 30.0);
       gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), width, height);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       // Done — pass textures back
       onResult?.({

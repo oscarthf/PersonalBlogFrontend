@@ -31,13 +31,18 @@ void main() {
   vec2 pos = self.xy;
   vec2 vel = self.zw;
 
+  // === GRAVITY ===
+
+  vec2 gravity = vec2(0.0, -0.0001);
+  vel += gravity;
+
   float maxSpeed = 0.05;
   if (length(vel) > maxSpeed) {
     vel = normalize(vel) * maxSpeed;
   }
 
   // === ROCK BOUNDING BOX ===
-  
+
   float dist = 0.0;
   vec2 dir = vec2(0.0);
 
@@ -76,34 +81,33 @@ void main() {
     pos += normal * pushOutDist;
   }
 
-  // // === COLLISION AVOIDANCE ===
-  // float repulse_force = 0.1;
-  // float radius = 0.2;
-  // vec2 repulse = vec2(0.0);
+  // === COLLISION AVOIDANCE ===
 
-  // for (int y = 0; y < int(u_textureSize); y++) {
-  //   for (int x = 0; x < int(u_textureSize); x++) {
-  //     if (x == fragIndex.x && y == fragIndex.y) continue;
+  float repulse_force = 0.01;
+  float radius = 0.2;
+  vec2 repulse = vec2(0.0);
 
-  //     vec4 other = readParticle(ivec2(x, y));
-  //     vec2 delta = pos - other.xy;
-  //     float d = length(delta);
-  //     if (d > 0.0 && d < radius) {
-  //       repulse += normalize(delta) * (radius - d) * repulse_force;
-  //     }
-  //   }
-  // }
+  for (int y = 0; y < int(u_textureSize); y++) {
+    for (int x = 0; x < int(u_textureSize); x++) {
+      if (x == fragIndex.x && y == fragIndex.y) continue;
 
-  // vel += repulse * 0.01;
-
-  // === VELOCITY LIMIT / DAMPING ===
-  float speed = length(vel);
-  if (speed > 0.02) {
-    // vel *= 0.98;
-    vel *= 0.1;
+      vec4 other = readParticle(ivec2(x, y));
+      vec2 delta = pos - other.xy;
+      float d = length(delta);
+      if (d > 0.0 && d < radius) {
+        repulse += normalize(delta) * (radius - d) * repulse_force;
+      }
+    }
   }
 
+  vel += repulse * 0.01;
+
+  // === DAMPING ===
+
+  vel *= 0.98;
+
   // === POSITION INTEGRATION ===
+
   pos += vel;
 
   // Bounce off canvas borders
@@ -112,9 +116,15 @@ void main() {
     pos.x = clamp(pos.x, 0.0, 1.0);
   }
 
-  if (pos.y < 0.0 || pos.y > 1.0) {
-    vel.y *= -1.0;
-    pos.y = clamp(pos.y, 0.0, 1.0);
+  // if (pos.y < 0.0 || pos.y > 1.0) {
+  //   vel.y *= -1.0;
+  //   pos.y = clamp(pos.y, 0.0, 1.0);
+  // }
+  if (pos.y < 0.0) {
+    pos.y += 1.0;
+  }
+  if (pos.y > 1.0) {
+    pos.y -= 1.0;
   }
 
   if (!all(lessThan(abs(pos), vec2(1000.0))) || !all(lessThan(abs(vel), vec2(1000.0)))) {
