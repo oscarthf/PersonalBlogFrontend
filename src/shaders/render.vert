@@ -1,6 +1,9 @@
 #version 300 es
+
 precision highp float;
+
 in vec2 a_index;
+
 uniform sampler2D u_data;
 uniform float u_size;
 

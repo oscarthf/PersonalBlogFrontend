@@ -12,6 +12,11 @@ uniform sampler2D u_dirYMap;
 
 uniform float u_textureSize;
 
+uniform float rock_x;
+uniform float rock_y;
+uniform float rock_w;
+uniform float rock_h;
+
 vec4 readParticle(ivec2 index) {
   vec2 uv = (vec2(index) + 0.5) / u_textureSize;
   return texture(u_data, uv);
@@ -31,49 +36,65 @@ void main() {
     vel = normalize(vel) * maxSpeed;
   }
 
-  // === FIELD FORCE ===
-  float dist = texture(u_distanceMap, pos).r;
-  bool isBlack = false;
-  if (dist < 0.0) {
-    isBlack = true;
+  // === ROCK BOUNDING BOX ===
+  
+  float dist = 0.0;
+  vec2 dir = vec2(0.0);
+
+  vec2 scaled_rock_pos = pos;
+  scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_w;
+  scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_h;
+
+  if (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0 && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0) {
+    dist = texture(u_distanceMap, scaled_rock_pos).r;
+    dir.x = texture(u_dirXMap, scaled_rock_pos).r;
+    dir.y = texture(u_dirYMap, scaled_rock_pos).r;
   }
 
-  vec2 dir = vec2(
-    texture(u_dirXMap, pos).r,
-    texture(u_dirYMap, pos).r
-  );
+  // // === FIELD FORCE ===
+  // bool isBlack = dist < 0.0;
 
-  // Pull toward/away from black area
-  vec2 force = vec2(0.0);
-  if (length(dir) > 0.0 && dist != 0.0) {
-    if (isBlack) {
-      force = normalize(dir) * exp(dist * 20.0);
-    } else {
-      force = -normalize(dir) * exp(-dist * 20.0);
-    }
+  // vec2 normal = normalize(dir);
+
+  // if (isBlack && length(normal) > 0.0) {
+  //   // Reflect the velocity if inside the shape (i.e., collision)
+  //   vel = reflect(vel, normal);
+
+  //   // Optional: move it just outside to prevent sticking
+  //   pos += normal * (0.002 - dist); // Small nudge out of shape
+  // }
+
+  // === COLLISION WITH BLACK SHAPE ===
+  vec2 normal = normalize(dir);
+
+  if (dist < 0.0 && length(normal) > 0.0) {
+    // Reflect velocity to bounce
+    vel = reflect(vel, normal);
+
+    // Push particle just outside the surface to avoid sticking
+    float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
+    pos += normal * pushOutDist;
   }
 
-  vel += force * 0.01;
+  // // === COLLISION AVOIDANCE ===
+  // float repulse_force = 0.1;
+  // float radius = 0.2;
+  // vec2 repulse = vec2(0.0);
 
-  // === COLLISION AVOIDANCE ===
-  float repulse_force = 0.1;
-  float radius = 0.2;
-  vec2 repulse = vec2(0.0);
+  // for (int y = 0; y < int(u_textureSize); y++) {
+  //   for (int x = 0; x < int(u_textureSize); x++) {
+  //     if (x == fragIndex.x && y == fragIndex.y) continue;
 
-  for (int y = 0; y < int(u_textureSize); y++) {
-    for (int x = 0; x < int(u_textureSize); x++) {
-      if (x == fragIndex.x && y == fragIndex.y) continue;
+  //     vec4 other = readParticle(ivec2(x, y));
+  //     vec2 delta = pos - other.xy;
+  //     float d = length(delta);
+  //     if (d > 0.0 && d < radius) {
+  //       repulse += normalize(delta) * (radius - d) * repulse_force;
+  //     }
+  //   }
+  // }
 
-      vec4 other = readParticle(ivec2(x, y));
-      vec2 delta = pos - other.xy;
-      float d = length(delta);
-      if (d > 0.0 && d < radius) {
-        repulse += normalize(delta) * (radius - d) * repulse_force;
-      }
-    }
-  }
-
-  vel += repulse * 0.01;
+  // vel += repulse * 0.01;
 
   // === VELOCITY LIMIT / DAMPING ===
   float speed = length(vel);

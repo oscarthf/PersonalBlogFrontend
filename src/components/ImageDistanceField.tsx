@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import distanceShaderSrc from "../shaders/distance.frag?raw";
+import fullscreenVS from "../shaders/fullscreen.vert?raw";
 
 interface Props {
   gl: WebGL2RenderingContext;
@@ -61,15 +62,6 @@ export default function ImageDistanceField({ gl, src, onResult }: Props) {
       }
       return program;
     };
-
-    const fullscreenVS = `#version 300 es
-      precision highp float;
-      out vec2 v_uv;
-      void main() {
-        vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
-        v_uv = pos;
-        gl_Position = vec4(pos * 2.0 - 1.0, 0, 1);
-      }`;
 
     loadImage(src).then((image) => {
       const width = image.width;

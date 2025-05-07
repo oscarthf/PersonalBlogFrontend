@@ -26,9 +26,15 @@ export default function WebGLCanvas({
   maskMap
 }: WebGLCanvasProps) {
   useEffect(() => {
+
     const canvas = gl.canvas as HTMLCanvasElement;
     canvas.width = 512;
     canvas.height = 512;
+
+    const rock_x = 0.4;
+    const rock_y = 0.4;
+    const rock_w = 0.2;
+    const rock_h = 0.2;
 
     // === Shader helpers ===
     const createShader = (type: number, source: string): WebGLShader => {
@@ -146,6 +152,11 @@ export default function WebGLCanvas({
         gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirYMap"), 3);
       }
 
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h);
+
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_textureSize"), TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
@@ -165,7 +176,11 @@ export default function WebGLCanvas({
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_2D, maskMap);
         gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_x"), rock_x);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_y"), rock_y);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_w"), rock_w);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_h"), rock_h);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
 
       // --- Particle Draw ---

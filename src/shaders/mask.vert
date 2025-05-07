@@ -3,8 +3,26 @@ precision highp float;
 
 out vec2 v_uv;
 
+uniform float rock_x;
+uniform float rock_y;
+uniform float rock_w;
+uniform float rock_h;
+
+vec2 getPos(int id) {
+  if (id == 0) return vec2(0.0, 0.0);
+  if (id == 1) return vec2(1.0, 0.0);
+  if (id == 2) return vec2(0.0, 1.0);
+  if (id == 3) return vec2(1.0, 0.0);
+  if (id == 4) return vec2(1.0, 1.0);
+  return vec2(0.0, 1.0);
+}
+
 void main() {
-  vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); // (0,0), (1,0), (0,1)
+  vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
-  gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0); // convert [0,1] → [-1,+1]
+
+  pos.x = rock_x + rock_w * pos.x;
+  pos.y = rock_y + rock_h * pos.y;
+  
+  gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }
