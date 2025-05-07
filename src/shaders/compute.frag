@@ -9,6 +9,7 @@ uniform sampler2D u_data;
 uniform sampler2D u_distanceMap;
 uniform sampler2D u_dirXMap;
 uniform sampler2D u_dirYMap;
+uniform sampler2D u_sideMask;
 
 uniform float u_textureSize;
 
@@ -24,6 +25,11 @@ vec4 readParticle(ivec2 index) {
 
 float lengthSquared(vec2 v) {
   return dot(v, v);
+}
+
+vec4 getSideMask(ivec2 index) {
+  vec2 uv = (vec2(index) + 0.5) / u_textureSize;
+  return texture(u_sideMask, uv);
 }
 
 void main() {
@@ -86,10 +92,11 @@ void main() {
   float radius_squared = radius * radius;
   vec2 repulse = vec2(0.0);
 
-  bool isOnLeftSide = pos.x < radius;
-  bool isOnRightSide = pos.x > 1.0 - radius;
-  bool isOnTopSide = pos.y > 1.0 - radius;
-  bool isOnBottomSide = pos.y < radius;
+  vec4 sideMask = texture(u_sideMask, fragUV);
+  bool isOnLeftSide = sideMask.r > 0.5;
+  bool isOnRightSide = sideMask.g > 0.5;
+  bool isOnTopSide = sideMask.b > 0.5;
+  bool isOnBottomSide = sideMask.a > 0.5;
 
   for (int y = 0; y < int(u_textureSize); y++) {
     for (int x = 0; x < int(u_textureSize); x++) {
@@ -100,10 +107,11 @@ void main() {
 
       vec2 other_pos = other.xy;
 
-      bool other_isOnLeftSide = other_pos.x < radius;
-      bool other_isOnRightSide = other_pos.x > 1.0 - radius;
-      bool other_isOnTopSide = other_pos.y > 1.0 - radius;
-      bool other_isOnBottomSide = other_pos.y < radius;
+      vec4 otherSideMask = getSideMask(ivec2(x, y));
+      bool other_isOnLeftSide = otherSideMask.r > 0.5;
+      bool other_isOnRightSide = otherSideMask.g > 0.5;
+      bool other_isOnTopSide = otherSideMask.b > 0.5;
+      bool other_isOnBottomSide = otherSideMask.a > 0.5;
 
       vec2 delta = pos - other_pos;
       

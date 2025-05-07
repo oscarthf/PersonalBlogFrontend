@@ -6,9 +6,15 @@ import renderVS from "../shaders/render.vert?raw";
 import renderFS from "../shaders/render.frag?raw";
 import maskVS from "../shaders/mask.vert?raw";
 import maskFS from "../shaders/mask.frag?raw";
+import sidemaskFS from "../shaders/sidemask.frag?raw";
 
 const PARTICLE_COUNT = 1024;
 const TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
+const CANVAS_SIZE = 512;
+const INITIAL_ROCK_X = 0.4;
+const INITIAL_ROCK_Y = 0.4;
+const INITIAL_ROCK_W = 0.2;
+const INITIAL_ROCK_H = 0.2;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -28,13 +34,13 @@ export default function WebGLCanvas({
   useEffect(() => {
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
 
-    let rock_x = 0.4;
-    let rock_y = 0.4;
-    const rock_w = 0.2;
-    const rock_h = 0.2;
+    let rock_x = INITIAL_ROCK_X;
+    let rock_y = INITIAL_ROCK_Y;
+    const rock_w = INITIAL_ROCK_W;
+    const rock_h = INITIAL_ROCK_H;
 
     const dragging = { current: false };
     const offset = { x: 0, y: 0 };
@@ -127,6 +133,15 @@ export default function WebGLCanvas({
     const computeProgram = createProgram(fullscreenVS, computeFS);
     const renderProgram = createProgram(renderVS, renderFS);
     const maskProgram = createProgram(maskVS, maskFS);
+    const sideMaskProgram = createProgram(fullscreenVS, sidemaskFS);
+
+    // === Framebuffer for side mask ===
+    const sideMaskTex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_SIZE, TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    const sideMaskFB = createFramebuffer(sideMaskTex);
 
     // === VAOs ===
     const quadVAO = gl.createVertexArray()!;
@@ -166,11 +181,31 @@ export default function WebGLCanvas({
 
     // === Render Loop ===
     function renderLoop() {
+      
+      // --- Side Mask Pass ---
+      gl.useProgram(sideMaskProgram);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, sideMaskFB);
+      gl.viewport(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+      gl.bindVertexArray(quadVAO);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "radius"), 0.2); // same radius as in sim
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_textureSize"), TEXTURE_SIZE);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+
       // --- Compute Step ---
       gl.useProgram(computeProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
       gl.viewport(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
       gl.bindVertexArray(quadVAO);
+
+      gl.activeTexture(gl.TEXTURE4);
+      gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
+      gl.uniform1i(gl.getUniformLocation(computeProgram, "u_sideMask"), 4);
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
