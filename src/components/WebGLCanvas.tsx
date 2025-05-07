@@ -23,7 +23,8 @@ interface WebGLCanvasProps {
   dirXMap?: WebGLTexture;
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
-  radius: number;
+  mask_radius: number;
+  particle_radius: number;
 }
 
 export default function WebGLCanvas({
@@ -32,7 +33,8 @@ export default function WebGLCanvas({
   dirXMap,
   dirYMap,
   maskMap,
-  radius,
+  mask_radius,
+  particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
 
@@ -202,13 +204,14 @@ export default function WebGLCanvas({
 
 
     // === Sprite Quad (used for instanced rendering) ===
+    let sprite_quad_size = 0.1;
     const quadVerts = new Float32Array([
-      -0.01, -0.01,
-      0.01, -0.01,
-      -0.01,  0.01,
-      -0.01,  0.01,
-      0.01, -0.01,
-      0.01,  0.01,
+      -sprite_quad_size, -sprite_quad_size,
+      sprite_quad_size, -sprite_quad_size,
+      -sprite_quad_size,  sprite_quad_size,
+      -sprite_quad_size,  sprite_quad_size,
+      sprite_quad_size, -sprite_quad_size,
+      sprite_quad_size,  sprite_quad_size,
     ]);
 
     const quadVBO = gl.createBuffer()!;
@@ -245,7 +248,7 @@ export default function WebGLCanvas({
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "radius"), parseFloat(radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSize"), CANVAS_SIZE);
 
@@ -284,7 +287,8 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * CANVAS_SIZE);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE);
 
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_radius"), parseFloat(radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_mask_radius"), parseFloat(mask_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);

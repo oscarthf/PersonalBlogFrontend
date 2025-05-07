@@ -3,6 +3,7 @@ import ImageDistanceField from "./ImageDistanceField";
 import WebGLCanvas from "./WebGLCanvas";
 
 const particleRadius = 30; // Adjust this value as needed
+const maskRadius = 30; // Adjust this value as needed
 
 export default function SimWithDistanceField() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,7 +30,7 @@ export default function SimWithDistanceField() {
             <ImageDistanceField
                 gl={gl}
                 src="/bw_mask.png"
-                radius={particleRadius}
+                radius={maskRadius}
                 onResult={({ distance, dirX, dirY, mask }) => {
                     setTextures({ distance, dirX, dirY });
                     setMaskTex(mask);
@@ -41,7 +42,8 @@ export default function SimWithDistanceField() {
                 dirXMap={textures.dirX}
                 dirYMap={textures.dirY}
                 maskMap={maskTex}
-                radius={particleRadius}
+                mask_radius={maskRadius}
+                particle_radius={particleRadius}
             />
         </>
       )}

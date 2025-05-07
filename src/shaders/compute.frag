@@ -13,7 +13,8 @@ uniform sampler2D u_sideMask;
 
 uniform float u_particleTextureSize;
 uniform float u_canvasSize;
-uniform float u_radius;
+uniform float u_mask_radius;
+uniform float u_particle_radius;
 
 uniform float rock_x;
 uniform float rock_y;
@@ -103,8 +104,9 @@ void main() {
   // === COLLISION AVOIDANCE ===
 
   float repulse_force = 100.0;
-  float radius = u_radius / u_canvasSize;
-  float radius_squared = radius * radius;
+  // float mask_radius = u_mask_radius / u_canvasSize;
+  float particle_radius = u_particle_radius / u_canvasSize;
+  float particle_radius_squared = particle_radius * particle_radius;
   vec2 repulse = vec2(0.0);
 
   vec4 sideMask = getSideMask(fragIndex);
@@ -119,8 +121,8 @@ void main() {
   bool isOnTopSide = up_down_mark < 0.25;
   bool isOnBottomSide = up_down_mark > 0.75;
 
-  int grid_width = (int(u_canvasSize) / int(radius));
-  int grid_height = (int(u_canvasSize) / int(radius));
+  int grid_width = (int(u_canvasSize) / int(particle_radius));
+  int grid_height = (int(u_canvasSize) / int(particle_radius));
 
   for (int y = 0; y < int(u_particleTextureSize); y++) {
     for (int x = 0; x < int(u_particleTextureSize); x++) {
@@ -159,12 +161,12 @@ void main() {
 
       vec2 delta = pos - other_pos;
       
-      if (abs(delta.x) < radius || abs(delta.y) < radius) {
-        // Check if the distance is less than the radius
+      if (abs(delta.x) < particle_radius || abs(delta.y) < particle_radius) {
+        // Check if the distance is less than the particle_radius
         float d_squared = lengthSquared(delta);
-        if (d_squared > 0.0 && d_squared < radius_squared) {
+        if (d_squared > 0.0 && d_squared < particle_radius_squared) {
           float d = sqrt(d_squared);
-          repulse += normalize(delta) * (radius - d) * repulse_force;
+          repulse += normalize(delta) * (particle_radius - d) * repulse_force;
         }
       }
 
@@ -173,12 +175,12 @@ void main() {
         // check for wrapped particles on the right side of the screen
         vec2 wrapped_pos = other_pos + vec2(u_canvasSize, 0.0);
         vec2 delta = pos - wrapped_pos;
-        if (abs(delta.x) < radius || abs(delta.y) < radius) {
-          // Check if the distance is less than the radius
+        if (abs(delta.x) < particle_radius || abs(delta.y) < particle_radius) {
+          // Check if the distance is less than the particle_radius
           float d_squared = lengthSquared(delta);
-          if (d_squared > 0.0 && d_squared < radius_squared) {
+          if (d_squared > 0.0 && d_squared < particle_radius_squared) {
             float d = sqrt(d_squared);
-            repulse += normalize(delta) * (radius - d) * repulse_force;
+            repulse += normalize(delta) * (particle_radius - d) * repulse_force;
           }
         }
       }
@@ -188,12 +190,12 @@ void main() {
         // check for wrapped particles on the left side of the screen
         vec2 wrapped_pos = other_pos - vec2(u_canvasSize, 0.0);
         vec2 delta = pos - wrapped_pos;
-        if (abs(delta.x) < radius || abs(delta.y) < radius) {
-          // Check if the distance is less than the radius
+        if (abs(delta.x) < particle_radius || abs(delta.y) < particle_radius) {
+          // Check if the distance is less than the particle_radius
           float d_squared = lengthSquared(delta);
-          if (d_squared > 0.0 && d_squared < radius_squared) {
+          if (d_squared > 0.0 && d_squared < particle_radius_squared) {
             float d = sqrt(d_squared);
-            repulse += normalize(delta) * (radius - d) * repulse_force;
+            repulse += normalize(delta) * (particle_radius - d) * repulse_force;
           }
         }
       }
@@ -203,12 +205,12 @@ void main() {
       //   // check for wrapped particles on the bottom side of the screen
       //   vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSize);
       //   vec2 delta = pos - wrapped_pos;
-      //   if (abs(delta.x) < radius || abs(delta.y) < radius) {
-      //     // Check if the distance is less than the radius
+      //   if (abs(delta.x) < particle_radius || abs(delta.y) < particle_radius) {
+      //     // Check if the distance is less than the particle_radius
       //     float d_squared = lengthSquared(delta);
-      //     if (d_squared > 0.0 && d_squared < radius_squared) {
+      //     if (d_squared > 0.0 && d_squared < particle_radius_squared) {
       //       float d = sqrt(d_squared);
-      //       repulse += normalize(delta) * (radius - d) * repulse_force;
+      //       repulse += normalize(delta) * (particle_radius - d) * repulse_force;
       //     }
       //   }
       // }
@@ -218,12 +220,12 @@ void main() {
       //   // check for wrapped particles on the top side of the screen
       //   vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSize);
       //   vec2 delta = pos - wrapped_pos;
-      //   if (abs(delta.x) < radius || abs(delta.y) < radius) {
-      //     // Check if the distance is less than the radius
+      //   if (abs(delta.x) < particle_radius || abs(delta.y) < particle_radius) {
+      //     // Check if the distance is less than the particle_radius
       //     float d_squared = lengthSquared(delta);
-      //     if (d_squared > 0.0 && d_squared < radius_squared) {
+      //     if (d_squared > 0.0 && d_squared < particle_radius_squared) {
       //       float d = sqrt(d_squared);
-      //       repulse += normalize(delta) * (radius - d) * repulse_force;
+      //       repulse += normalize(delta) * (particle_radius - d) * repulse_force;
       //     }
       //   }
       // }

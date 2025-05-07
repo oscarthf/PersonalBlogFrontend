@@ -5,7 +5,7 @@ in vec2 v_uv;
 out vec4 outColor;
 
 uniform sampler2D u_data;
-uniform float radius;
+uniform float u_particle_radius;
 uniform float u_particleTextureSize;
 uniform float u_canvasSize;
 
@@ -19,19 +19,19 @@ void main() {
   pos.x *= u_canvasSize;
   pos.y *= u_canvasSize;
 
-  float cell_x = floor(pos.x / radius);
-  float cell_y = floor(pos.y / radius);
+  float cell_x = floor(pos.x / u_particle_radius);
+  float cell_y = floor(pos.y / u_particle_radius);
 
   float left_right_mark = 0.5;
-  if (pos.x < radius) {
+  if (pos.x < u_particle_radius) {
     left_right_mark = 0.0;
-  } else if (pos.x > u_canvasSize - radius) {
+  } else if (pos.x > u_canvasSize - u_particle_radius) {
     left_right_mark = 1.0;
   }
   float up_down_mark = 0.5;
-  if (pos.y < radius) {
+  if (pos.y < u_particle_radius) {
     up_down_mark = 0.0;
-  } else if (pos.y > u_canvasSize - radius) {
+  } else if (pos.y > u_canvasSize - u_particle_radius) {
     up_down_mark = 1.0;
   }
 
