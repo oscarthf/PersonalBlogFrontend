@@ -22,6 +22,10 @@ vec4 readParticle(ivec2 index) {
   return texture(u_data, uv);
 }
 
+float lengthSquared(vec2 v) {
+  return dot(v, v);
+}
+
 void main() {
 
   // Compute own index from UV
@@ -35,7 +39,7 @@ void main() {
 
   // === GRAVITY ===
 
-  vec2 gravity = vec2(0.0, -0.0001);
+  vec2 gravity = vec2(0.0, -0.001);
   vel += gravity;
 
   float maxSpeed = 0.05;
@@ -79,7 +83,13 @@ void main() {
 
   float repulse_force = 0.01;
   float radius = 0.2;
+  float radius_squared = radius * radius;
   vec2 repulse = vec2(0.0);
+
+  bool isOnLeftSide = pos.x < radius;
+  bool isOnRightSide = pos.x > 1.0 - radius;
+  bool isOnTopSide = pos.y > 1.0 - radius;
+  bool isOnBottomSide = pos.y < radius;
 
   for (int y = 0; y < int(u_textureSize); y++) {
     for (int x = 0; x < int(u_textureSize); x++) {
@@ -89,59 +99,82 @@ void main() {
       vec4 other = readParticle(ivec2(x, y));
 
       vec2 other_pos = other.xy;
+
+      bool other_isOnLeftSide = other_pos.x < radius;
+      bool other_isOnRightSide = other_pos.x > 1.0 - radius;
+      bool other_isOnTopSide = other_pos.y > 1.0 - radius;
+      bool other_isOnBottomSide = other_pos.y < radius;
+
       vec2 delta = pos - other_pos;
       
       if (abs(delta.x) < radius || abs(delta.y) < radius) {
         // Check if the distance is less than the radius
-        float d = length(delta);
-        if (d > 0.0 && d < radius) {
+        float d_squared = lengthSquared(delta);
+        if (d_squared > 0.0 && d_squared < radius_squared) {
+          float d = sqrt(d_squared);
           repulse += normalize(delta) * (radius - d) * repulse_force;
         }
       }
 
       // check if is on the left side of the screen
-      if (other_pos.x < radius) {
+      if (other_isOnLeftSide && isOnRightSide) {
         // check for wrapped particles on the right side of the screen
         vec2 wrapped_pos = other_pos + vec2(1.0, 0.0);
         vec2 delta = pos - wrapped_pos;
         if (abs(delta.x) < radius || abs(delta.y) < radius) {
           // Check if the distance is less than the radius
-          float d = length(delta);
-          if (d > 0.0 && d < radius) {
+          float d_squared = lengthSquared(delta);
+          if (d_squared > 0.0 && d_squared < radius_squared) {
+            float d = sqrt(d_squared);
             repulse += normalize(delta) * (radius - d) * repulse_force;
           }
         }
       }
 
       // check if is on the right side of the screen
-      if (other_pos.x > 1.0 - radius) {
+      if (other_isOnRightSide && isOnLeftSide) {
         // check for wrapped particles on the left side of the screen
         vec2 wrapped_pos = other_pos - vec2(1.0, 0.0);
         vec2 delta = pos - wrapped_pos;
         if (abs(delta.x) < radius || abs(delta.y) < radius) {
           // Check if the distance is less than the radius
-          float d = length(delta);
-          if (d > 0.0 && d < radius) {
+          float d_squared = lengthSquared(delta);
+          if (d_squared > 0.0 && d_squared < radius_squared) {
+            float d = sqrt(d_squared);
             repulse += normalize(delta) * (radius - d) * repulse_force;
           }
         }
       }
 
+      // check if is on the top side of the screen
+      if (other_isOnTopSide && isOnBottomSide) {
+        // check for wrapped particles on the bottom side of the screen
+        vec2 wrapped_pos = other_pos - vec2(0.0, 1.0);
+        vec2 delta = pos - wrapped_pos;
+        if (abs(delta.x) < radius || abs(delta.y) < radius) {
+          // Check if the distance is less than the radius
+          float d_squared = lengthSquared(delta);
+          if (d_squared > 0.0 && d_squared < radius_squared) {
+            float d = sqrt(d_squared);
+            repulse += normalize(delta) * (radius - d) * repulse_force;
+          }
+        }
+      }
       
-
-      // for (int wrap_x = -1; wrap_x < 2; wrap_x++) {
-      //   for (int wrap_y = -1; wrap_y < 2; wrap_y++) {
-      //     vec2 wrapped_pos = other.xy + vec2(float(wrap_x), float(wrap_y));
-      //     vec2 delta = pos - wrapped_pos;
-      //     if (abs(delta.x) > radius) continue;
-      //     if (abs(delta.y) > radius) continue;
-      //     // Check if the distance is less than the radius
-      //     float d = length(delta);
-      //     if (d > 0.0 && d < radius) {
-      //       repulse += normalize(delta) * (radius - d) * repulse_force;
-      //     }
-      //   }
-      // }
+      // check if is on the bottom side of the screen
+      if (other_isOnBottomSide && isOnTopSide) {
+        // check for wrapped particles on the top side of the screen
+        vec2 wrapped_pos = other_pos + vec2(0.0, 1.0);
+        vec2 delta = pos - wrapped_pos;
+        if (abs(delta.x) < radius || abs(delta.y) < radius) {
+          // Check if the distance is less than the radius
+          float d_squared = lengthSquared(delta);
+          if (d_squared > 0.0 && d_squared < radius_squared) {
+            float d = sqrt(d_squared);
+            repulse += normalize(delta) * (radius - d) * repulse_force;
+          }
+        }
+      }
 
     }
   }
@@ -150,7 +183,7 @@ void main() {
 
   // === DAMPING ===
 
-  vel *= 0.98;
+  vel *= 0.95;
 
   // === POSITION INTEGRATION ===
 
