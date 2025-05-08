@@ -11,6 +11,7 @@ import trailLineVS from "../shaders/trailLine.vert?raw";
 import trailLineFS from "../shaders/trailLine.frag?raw";
 import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
 import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
+import { createProgram, createFramebuffer, createDataTexture } from "../web_gl_util/general";
 
 // const PARTICLE_COUNT = 1024;
 const PARTICLE_COUNT = 324;
@@ -93,71 +94,20 @@ export default function WebGLCanvas({
       dragging.current = false;
     }
 
-    // === Shader helpers ===
-    const createShader = (type: number, source: string): WebGLShader => {
-      const shader = gl.createShader(type)!;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error("Shader compile error: " + gl.getShaderInfoLog(shader));
-      }
-      return shader;
-    };
-
-    const createProgram = (vsSrc: string, fsSrc: string): WebGLProgram => {
-      const program = gl.createProgram()!;
-      const vs = createShader(gl.VERTEX_SHADER, vsSrc);
-      const fs = createShader(gl.FRAGMENT_SHADER, fsSrc);
-      gl.attachShader(program, vs);
-      gl.attachShader(program, fs);
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error("Program link error: " + gl.getProgramInfoLog(program));
-      }
-      return program;
-    };
-
-    const createDataTexture = (size: number): WebGLTexture => {
-      const data = new Float32Array(size * size * 4);
-      for (let i = 0; i < size * size; i++) {
-        const x = Math.random();
-        const y = Math.random();
-        // const vx = (Math.random() - 0.5) * 0.01;
-        // const vy = (Math.random() - 0.5) * 0.01;
-        const random_angle = Math.random() * Math.PI / 8 - Math.PI / 16;
-        const vx = Math.sin(random_angle) * 0.01;
-        const vy = -Math.cos(random_angle) * 0.01;
-        data.set([x, y, vx, vy], i * 4);
-      }
-
-      const tex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size, size, 0, gl.RGBA, gl.FLOAT, data);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      return tex;
-    };
-
-    const createFramebuffer = (texture: WebGLTexture): WebGLFramebuffer => {
-      const fb = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      return fb;
-    };
-
     // === Programs ===
-    const computeProgram = createProgram(fullscreenVS, computeFS);
-    const renderProgram = createProgram(renderVS, renderFS);
-    const maskProgram = createProgram(maskVS, maskFS);
-    const sideMaskProgram = createProgram(fullscreenVS, sidemaskFS);
-    const trailLineProgram = createProgram(trailLineVS, trailLineFS);
-    const trailDisplayProgram = createProgram(trailDisplayVS, trailDisplayFS);
+    const computeProgram = createProgram(gl, fullscreenVS, computeFS);
+    const renderProgram = createProgram(gl, renderVS, renderFS);
+    const maskProgram = createProgram(gl, maskVS, maskFS);
+    const sideMaskProgram = createProgram(gl, fullscreenVS, sidemaskFS);
+    const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
+    const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
     // === Textures ===
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
     spriteImage.src = "/particle.png";
     let spriteReady = false;
+    
     spriteImage.onload = () => {
       spriteTex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
@@ -172,6 +122,38 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
       spriteReady = true;
     };
+
+    // === Trail Indices and TrailCorners ===
+
+    // One quad (2 triangles = 6 verts) per particle for trail ribbons
+    const TRAIL_VERTS_PER_PARTICLE = 6;
+    const trailIndices = new Float32Array(PARTICLE_COUNT * TRAIL_VERTS_PER_PARTICLE * 2); // 2 floats per a_index (x, y)
+    const trailCorners = new Float32Array(PARTICLE_COUNT * TRAIL_VERTS_PER_PARTICLE);     // 1 float per a_corner
+
+    // This pattern defines the side of the quad: -1 = left, +1 = right
+    const quadPattern = [
+      [-1, 0], [1, 0], [-1, 1],
+      [-1, 1], [1, 0], [1, 1],
+    ];
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const texX = i % PARTICLE_TEXTURE_SIZE;
+      const texY = Math.floor(i / PARTICLE_TEXTURE_SIZE);
+      for (let v = 0; v < 6; v++) {
+        const dst = i * 6 + v;
+        trailIndices[dst * 2 + 0] = texX;
+        trailIndices[dst * 2 + 1] = texY;
+        trailCorners[dst] = quadPattern[v][0]; // -1 or +1 (left/right)
+      }
+    }
+
+    const trailIndexBuffer = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, trailIndices, gl.STATIC_DRAW);
+
+    const trailCornerBuffer = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, trailCorners, gl.STATIC_DRAW);
 
     // === Framebuffer for trails ===
     const trailTex = gl.createTexture()!;
@@ -193,7 +175,8 @@ export default function WebGLCanvas({
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    const sideMaskFB = createFramebuffer(sideMaskTex);
+    
+    const sideMaskFB = createFramebuffer(gl, sideMaskTex);
 
     // === VAOs ===
 
@@ -210,7 +193,7 @@ export default function WebGLCanvas({
     gl.enableVertexAttribArray(aIndex);
     gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
 
-    // new sprite code
+    // === Sprite Quad VAO ===
 
     let sprite_quad_size = 0.04;
     const quadVerts = new Float32Array([
@@ -243,17 +226,34 @@ export default function WebGLCanvas({
 
     gl.bindVertexArray(null);
 
+    // === Trail VAO ===
+
+    const trailVAO = gl.createVertexArray()!;
+    gl.bindVertexArray(trailVAO);
+
+    // a_index (vec2)
+    gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    // a_corner (float)
+    gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
+
+    gl.bindVertexArray(null);
+
 
     // === Simulation Textures ===
-    const texA = createDataTexture(PARTICLE_TEXTURE_SIZE);
+    const texA = createDataTexture(gl, PARTICLE_TEXTURE_SIZE);
     const texB = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, texB);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-    const fbA = createFramebuffer(texA);
-    const fbB = createFramebuffer(texB);
+    const fbA = createFramebuffer(gl, texA);
+    const fbB = createFramebuffer(gl, texB);
 
     let readTex = texA,
         writeTex = texB,
@@ -354,21 +354,16 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-      [readTex, writeTex] = [writeTex, readTex];
-      [readFB, writeFB] = [writeFB, readFB];
       
       // --- Draw Particle Trails ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       gl.useProgram(trailLineProgram);
+      // gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.5);
       
-      // VAO not needed here; simple buffer bind is enough
-      gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-      gl.enableVertexAttribArray(0);
-      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_prevData"), 0);
@@ -379,18 +374,25 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
 
+      // --- Swap read/write textures and framebuffers ---
+
+      [readTex, writeTex] = [writeTex, readTex];
+      [readFB, writeFB] = [writeFB, readFB];
+      
       // Enable additive blending
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
-      // Each particle emits a line → 2 vertices
-      gl.drawArrays(gl.LINES, 0, PARTICLE_COUNT * 2);
+      // // Clear white for test
+      // gl.clearColor(1, 1, 1, 1);
+      // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      
+      gl.bindVertexArray(trailVAO);
+      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
 
       // Disable blending after drawing trails
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-
 
       // --- Render Pass ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
