@@ -437,7 +437,7 @@ export default function WebGLCanvas({
             sideMaskProgram, 
             trailLineProgram, 
             trailDisplayProgram } = createPrograms();
-            
+
     // === Textures ===
     
     const spriteImage = new Image();
@@ -450,39 +450,18 @@ export default function WebGLCanvas({
       spriteReady = true;
     };
 
-    // === Trail Indices and TrailCorners ===
+    //
 
     const { trailIndexBuffer, trailCornerBuffer, trailTex, trailFB } = setupTrails();
-
-    // === Framebuffer for side mask ===
-
     const { sideMaskTex, sideMaskFB } = setupSideMask();
-
-    // === VAOs ===
-
     const indexBuffer = setupParticleIndices();
-
-    // === Sprite Quad VAO ===
-
     const { quadVBO, spriteVAO } = setupParticleVertices(PARTICLE_QUAD_SIZE);
-
-    // === Trail VAO ===
-    
     const trailVAO = setupTrailVertices();
-
-    // === Simulation Textures ===
-
     let { texA: readTex, texB: writeTex, fbA: readFB, fbB: writeFB } = setupSimulationTextures();
-
-    // // === Fullscreen VAO (for compute/mask) ===
-
     const fullscreenVAO = setupFullscreenQuad();
-
-    // === Sprite Quad (used for instanced rendering) ===
 
     setupSpriteQuad();
 
-    // === Render Loop ===
     function renderLoop() {
 
       if (!spriteReady) {
