@@ -12,10 +12,12 @@ import trailLineFS from "../shaders/trailLine.frag?raw";
 import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
 import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 import { createProgram, createFramebuffer, createDataTexture } from "../web_gl_util/general";
+import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
 // const PARTICLE_COUNT = 1024;
 const PARTICLE_COUNT = 324;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
+const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 const CANVAS_SIZE = 512;
 const INITIAL_ROCK_X = 0.4;
 const INITIAL_ROCK_Y = 0.4;
@@ -59,10 +61,6 @@ export default function WebGLCanvas({
     const dragging = { current: false };
     const offset = { x: 0, y: 0 };
     
-    // gl.enable(gl.BLEND);
-    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-    // Convert canvas coordinates to normalized 0–1
     function getMousePos(evt: MouseEvent): { x: number; y: number } {
       const rect = canvas.getBoundingClientRect();
       const x = (evt.clientX - rect.left) / rect.width;
@@ -94,213 +92,10 @@ export default function WebGLCanvas({
       dragging.current = false;
     }
 
-    // === Programs ===
-    const computeProgram = createProgram(gl, fullscreenVS, computeFS);
-    const renderProgram = createProgram(gl, renderVS, renderFS);
-    const maskProgram = createProgram(gl, maskVS, maskFS);
-    const sideMaskProgram = createProgram(gl, fullscreenVS, sidemaskFS);
-    const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
-    const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
-    // === Textures ===
-    
-    const spriteImage = new Image();
-    let spriteTex: WebGLTexture;
-    spriteImage.src = "/particle.png";
-    let spriteReady = false;
-    
-    spriteImage.onload = () => {
-      spriteTex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, spriteImage);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // === WebGL Setup ===
+
+    function preProcessParticles() {
       
-      // save for use later during render
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-      spriteReady = true;
-    };
-
-    // === Trail Indices and TrailCorners ===
-
-    // One quad (2 triangles = 6 verts) per particle for trail ribbons
-    const TRAIL_VERTS_PER_PARTICLE = 6;
-    const trailIndices = new Float32Array(PARTICLE_COUNT * TRAIL_VERTS_PER_PARTICLE * 2); // 2 floats per a_index (x, y)
-    const trailCorners = new Float32Array(PARTICLE_COUNT * TRAIL_VERTS_PER_PARTICLE);     // 1 float per a_corner
-
-    // This pattern defines the side of the quad: -1 = left, +1 = right
-    const quadPattern = [
-      [-1, 0], [1, 0], [-1, 1],
-      [-1, 1], [1, 0], [1, 1],
-    ];
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const texX = i % PARTICLE_TEXTURE_SIZE;
-      const texY = Math.floor(i / PARTICLE_TEXTURE_SIZE);
-      for (let v = 0; v < 6; v++) {
-        const dst = i * 6 + v;
-        trailIndices[dst * 2 + 0] = texX;
-        trailIndices[dst * 2 + 1] = texY;
-        trailCorners[dst] = quadPattern[v][0]; // -1 or +1 (left/right)
-      }
-    }
-
-    const trailIndexBuffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, trailIndices, gl.STATIC_DRAW);
-
-    const trailCornerBuffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, trailCorners, gl.STATIC_DRAW);
-
-    // === Framebuffer for trails ===
-    const trailTex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, trailTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE, CANVAS_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    const trailFB = gl.createFramebuffer()!;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, trailTex, 0);
-
-
-    // === Framebuffer for side mask ===
-    const sideMaskTex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    
-    const sideMaskFB = createFramebuffer(gl, sideMaskTex);
-
-    // === VAOs ===
-
-    const indices = new Float32Array(PARTICLE_COUNT * 2);
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      indices[i * 2 + 0] = i % PARTICLE_TEXTURE_SIZE;
-      indices[i * 2 + 1] = Math.floor(i / PARTICLE_TEXTURE_SIZE);
-    }
-
-    const indexBuffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-    const aIndex = gl.getAttribLocation(renderProgram, "a_index");
-    gl.enableVertexAttribArray(aIndex);
-    gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
-
-    // === Sprite Quad VAO ===
-
-    let sprite_quad_size = 0.04;
-    const quadVerts = new Float32Array([
-      -sprite_quad_size, -sprite_quad_size,
-      sprite_quad_size, -sprite_quad_size,
-      -sprite_quad_size,  sprite_quad_size,
-      -sprite_quad_size,  sprite_quad_size,
-      sprite_quad_size, -sprite_quad_size,
-      sprite_quad_size,  sprite_quad_size,
-    ]);
-
-    const quadVBO = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
-
-    const spriteVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(spriteVAO);
-
-    // layout(location = 0) - quad vertex positions
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(0, 0); // per-vertex
-
-    // layout(location = 1) - texture index lookup
-    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(1, 1); // per-instance
-
-    gl.bindVertexArray(null);
-
-    // === Trail VAO ===
-
-    const trailVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(trailVAO);
-
-    // a_index (vec2)
-    gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-    // a_corner (float)
-    gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
-
-    gl.bindVertexArray(null);
-
-
-    // === Simulation Textures ===
-    const texA = createDataTexture(gl, PARTICLE_TEXTURE_SIZE);
-    const texB = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, texB);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-    const fbA = createFramebuffer(gl, texA);
-    const fbB = createFramebuffer(gl, texB);
-
-    let readTex = texA,
-        writeTex = texB,
-        readFB = fbA,
-        writeFB = fbB;
-
-
-    // === Fullscreen VAO (for compute/mask) ===
-    const fullscreenVerts = new Float32Array([
-      -1, -1,  1, -1, -1,  1,
-      -1,  1,  1, -1,  1,  1,
-    ]);
-
-    const fullscreenVBO = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, fullscreenVerts, gl.STATIC_DRAW);
-
-    const fullscreenVAO = gl.createVertexArray()!;
-    gl.bindVertexArray(fullscreenVAO);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-
-    // === Sprite Quad (used for instanced rendering) ===
-
-    // a_quadPos: per-vertex quad position
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); // layout(location = 0)
-    gl.vertexAttribDivisor(0, 0); // per-vertex
-
-    // a_index: per-instance texture index
-    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer); // already contains particle indices
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0); // layout(location = 1)
-    gl.vertexAttribDivisor(1, 1); // per-instance
-
-    gl.bindVertexArray(null); // unbind when done
-
-    // === Render Loop ===
-    function renderLoop() {
-      if (!spriteReady) {
-        requestAnimationFrame(renderLoop);
-        return;
-      }
-      
-      // --- Side Mask Pass ---
       gl.useProgram(sideMaskProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, sideMaskFB);
       gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
@@ -315,7 +110,10 @@ export default function WebGLCanvas({
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-      // --- Compute Step ---
+    }
+
+    function stepSimulation() {
+
       gl.useProgram(computeProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
       gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
@@ -354,8 +152,10 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-      
-      // --- Draw Particle Trails ---
+    }
+
+    function drawTrails() {
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
@@ -374,6 +174,331 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
 
+    }
+
+    function drawRock() {
+
+      if (maskMap) {
+        gl.useProgram(maskProgram);
+        gl.bindVertexArray(fullscreenVAO);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, maskMap);
+        gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_x"), rock_x);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_y"), rock_y);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_w"), rock_w);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_h"), rock_h);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+      
+    }
+
+    function drawParticles() {
+      
+      gl.useProgram(renderProgram);
+      gl.bindVertexArray(spriteVAO);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
+      
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
+      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_sprite"), 1);
+
+      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
+      
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+
+    }
+
+    function drawTrailsOnScreen() {
+
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); // render to screen
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      gl.useProgram(trailDisplayProgram);
+      gl.bindVertexArray(fullscreenVAO);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, trailTex);
+      gl.uniform1i(gl.getUniformLocation(trailDisplayProgram, "u_texture"), 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    }
+
+    function trackFPS() {
+
+      frames++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fps = frames;
+        frames = 0;
+        lastTime = now;
+        console.log("FPS:", fps); // or use this value in a state update
+      }
+
+    }
+
+    function setupTrails() {
+
+      const { trailIndices, trailCorners } = createTrailIndicesAndCorners(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
+
+      const trailIndexBuffer = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, trailIndices, gl.STATIC_DRAW);
+  
+      const trailCornerBuffer = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, trailCorners, gl.STATIC_DRAW);
+  
+      // === Framebuffer for trails ===
+      const trailTex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, trailTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE, CANVAS_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  
+      const trailFB = gl.createFramebuffer()!;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, trailTex, 0);
+
+      return { trailIndexBuffer, trailCornerBuffer, trailTex, trailFB };
+  
+    }
+
+    function setupSideMask() {
+
+      const sideMaskTex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      
+      const sideMaskFB = createFramebuffer(gl, sideMaskTex);
+      
+      return { sideMaskTex, sideMaskFB };
+
+    }
+
+    function setupParticleIndices() {
+
+      const indices = createParticleIndices(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
+
+      const indexBuffer = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+      const aIndex = gl.getAttribLocation(renderProgram, "a_index");
+      gl.enableVertexAttribArray(aIndex);
+      gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
+
+      return indexBuffer;
+
+    }
+
+    function setupParticleVertices(size: number) {
+      
+      const quadVerts = createParticleVertices(PARTICLE_QUAD_SIZE);
+
+      const quadVBO = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+      gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+
+      const spriteVAO = gl.createVertexArray()!;
+      gl.bindVertexArray(spriteVAO);
+
+      // layout(location = 0) - quad vertex positions
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribDivisor(0, 0); // per-vertex
+
+      // layout(location = 1) - texture index lookup
+      gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribDivisor(1, 1); // per-instance
+
+      gl.bindVertexArray(null);
+
+      return {
+        quadVBO,
+        spriteVAO,
+      };
+
+    }
+
+    function setupTrailVertices() {
+
+      const trailVAO = gl.createVertexArray()!;
+      gl.bindVertexArray(trailVAO);
+  
+      // a_index (vec2)
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  
+      // a_corner (float)
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
+  
+      gl.bindVertexArray(null);
+
+      return trailVAO;
+
+    }
+  
+    function setupSimulationTextures() {
+
+      const texA = createDataTexture(gl, PARTICLE_TEXTURE_SIZE);
+      const texB = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, texB);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  
+      const fbA = createFramebuffer(gl, texA);
+      const fbB = createFramebuffer(gl, texB);
+
+      return { texA, texB, fbA, fbB };
+
+    }
+
+    function setupFullscreenQuad() {
+
+      const fullscreenVerts = new Float32Array([
+        -1, -1,  1, -1, -1,  1,
+        -1,  1,  1, -1,  1,  1,
+      ]);
+
+      const fullscreenVBO = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenVBO);
+      gl.bufferData(gl.ARRAY_BUFFER, fullscreenVerts, gl.STATIC_DRAW);
+
+      const fullscreenVAO = gl.createVertexArray()!;
+      gl.bindVertexArray(fullscreenVAO);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+      return fullscreenVAO;
+
+    }
+
+    function setupSpriteQuad() {
+
+      // a_quadPos: per-vertex quad position
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); // layout(location = 0)
+      gl.vertexAttribDivisor(0, 0); // per-vertex
+
+      // a_index: per-instance texture index
+      gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer); // already contains particle indices
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0); // layout(location = 1)
+      gl.vertexAttribDivisor(1, 1); // per-instance
+
+      gl.bindVertexArray(null); // unbind when done
+
+    }
+
+    function createPrograms() {
+      
+      const computeProgram = createProgram(gl, fullscreenVS, computeFS);
+      const renderProgram = createProgram(gl, renderVS, renderFS);
+      const maskProgram = createProgram(gl, maskVS, maskFS);
+      const sideMaskProgram = createProgram(gl, fullscreenVS, sidemaskFS);
+      const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
+      const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
+
+      return {
+        computeProgram,
+        renderProgram,
+        maskProgram,
+        sideMaskProgram,
+        trailLineProgram,
+        trailDisplayProgram,
+      };
+
+    }
+
+    // gl.enable(gl.BLEND);
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // === Programs ===
+
+    const { computeProgram,
+            renderProgram, 
+            maskProgram, 
+            sideMaskProgram, 
+            trailLineProgram, 
+            trailDisplayProgram } = createPrograms();
+            
+    // === Textures ===
+    
+    const spriteImage = new Image();
+    let spriteTex: WebGLTexture;
+    spriteImage.src = "/particle.png";
+    let spriteReady = false;
+
+    spriteImage.onload = () => {
+      spriteTex = loadSpriteImage(gl, spriteImage);
+      spriteReady = true;
+    };
+
+    // === Trail Indices and TrailCorners ===
+
+    const { trailIndexBuffer, trailCornerBuffer, trailTex, trailFB } = setupTrails();
+
+    // === Framebuffer for side mask ===
+
+    const { sideMaskTex, sideMaskFB } = setupSideMask();
+
+    // === VAOs ===
+
+    const indexBuffer = setupParticleIndices();
+
+    // === Sprite Quad VAO ===
+
+    const { quadVBO, spriteVAO } = setupParticleVertices(PARTICLE_QUAD_SIZE);
+
+    // === Trail VAO ===
+    
+    const trailVAO = setupTrailVertices();
+
+    // === Simulation Textures ===
+
+    let { texA: readTex, texB: writeTex, fbA: readFB, fbB: writeFB } = setupSimulationTextures();
+
+    // // === Fullscreen VAO (for compute/mask) ===
+
+    const fullscreenVAO = setupFullscreenQuad();
+
+    // === Sprite Quad (used for instanced rendering) ===
+
+    setupSpriteQuad();
+
+    // === Render Loop ===
+    function renderLoop() {
+
+      if (!spriteReady) {
+        requestAnimationFrame(renderLoop);
+        return;
+      }
+      
+      // --- Side Mask Pass ---
+      preProcessParticles();
+
+      // --- Compute Step ---
+      stepSimulation();
+      
+      // --- Draw Particle Trails ---
+      drawTrails();
+      
       // --- Swap read/write textures and framebuffers ---
 
       [readTex, writeTex] = [writeTex, readTex];
@@ -402,52 +527,17 @@ export default function WebGLCanvas({
 
 
       // --- Mask Background ---
-      if (maskMap) {
-        gl.useProgram(maskProgram);
-        gl.bindVertexArray(fullscreenVAO);
-        gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_2D, maskMap);
-        gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_x"), rock_x);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_y"), rock_y);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_w"), rock_w);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_h"), rock_h);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-      }
-      
+      drawRock();
+
       // --- Enable Blending ---
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
       // --- Render Particles ---
-      gl.useProgram(renderProgram);
-      gl.bindVertexArray(spriteVAO);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, readTex);
-      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
-      
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_sprite"), 1);
-
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_particle_radius"), sprite_quad_size);
-      
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+      drawParticles();
       
       // --- Render Trails ---
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null); // render to screen
-      gl.viewport(0, 0, canvas.width, canvas.height);
-
-      gl.useProgram(trailDisplayProgram);
-      gl.bindVertexArray(fullscreenVAO);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, trailTex);
-      gl.uniform1i(gl.getUniformLocation(trailDisplayProgram, "u_texture"), 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-
+      drawTrailsOnScreen();
 
       // --- Disable Blending ---
 
@@ -456,14 +546,7 @@ export default function WebGLCanvas({
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
       // --- Track FPS ---
-      frames++;
-      const now = performance.now();
-      if (now - lastTime >= 1000) {
-        fps = frames;
-        frames = 0;
-        lastTime = now;
-        console.log("FPS:", fps); // or use this value in a state update
-      }
+      trackFPS();
 
       requestAnimationFrame(renderLoop);
 
