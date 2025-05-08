@@ -58,6 +58,8 @@ export default function WebGLCanvas({
     const rock_w = INITIAL_ROCK_W;
     const rock_h = INITIAL_ROCK_H;
 
+    // === Mouse Dragging ===
+
     const dragging = { current: false };
     const offset = { x: 0, y: 0 };
     
@@ -160,7 +162,6 @@ export default function WebGLCanvas({
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       gl.useProgram(trailLineProgram);
-      // gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.5);
       
@@ -227,7 +228,7 @@ export default function WebGLCanvas({
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null); // render to screen
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
 
       gl.useProgram(trailDisplayProgram);
@@ -448,9 +449,6 @@ export default function WebGLCanvas({
 
     }
 
-    // gl.enable(gl.BLEND);
-    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
     // === Programs ===
 
     const { computeProgram,
@@ -484,6 +482,29 @@ export default function WebGLCanvas({
 
     setupSpriteQuad();
 
+    function preProcessing() {
+
+      preProcessParticles();
+      stepSimulation();
+      drawTrails();
+
+    }
+
+    function renderPass() {
+      
+      clearScreen();
+      drawRock();
+      drawParticles();
+      drawTrailsOnScreen();
+
+    }
+
+    function flipReadWriteParticleTextures() {
+
+      [readTex, writeTex] = [writeTex, readTex];
+      [readFB, writeFB] = [writeFB, readFB];
+      
+    }
     function renderLoop() {
 
       if (!spriteReady) {
@@ -491,19 +512,11 @@ export default function WebGLCanvas({
         return;
       }
       
-      preProcessParticles();
-      stepSimulation();
-      drawTrails();
+      preProcessing();
 
-      [readTex, writeTex] = [writeTex, readTex];
-      [readFB, writeFB] = [writeFB, readFB];
+      flipReadWriteParticleTextures();
       
-      // --- Render Pass ---
-      clearScreen();
-      drawRock();
-      drawParticles();
-      drawTrailsOnScreen();
-      // --- End Render Pass ---
+      renderPass();
 
       trackFPS();
 
