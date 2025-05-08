@@ -174,6 +174,15 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
 
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+      gl.bindVertexArray(trailVAO);
+      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     }
 
     function drawRock() {
@@ -215,7 +224,9 @@ export default function WebGLCanvas({
 
     function drawTrailsOnScreen() {
 
-
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); // render to screen
       gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -225,6 +236,10 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
       gl.uniform1i(gl.getUniformLocation(trailDisplayProgram, "u_texture"), 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     }
 
@@ -406,6 +421,13 @@ export default function WebGLCanvas({
 
     }
 
+    function clearScreen() {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
     function createPrograms() {
       
       const computeProgram = createProgram(gl, fullscreenVS, computeFS);
@@ -469,62 +491,20 @@ export default function WebGLCanvas({
         return;
       }
       
-      // --- Side Mask Pass ---
       preProcessParticles();
-
-      // --- Compute Step ---
       stepSimulation();
-      
-      // --- Draw Particle Trails ---
       drawTrails();
-      
-      // --- Swap read/write textures and framebuffers ---
 
       [readTex, writeTex] = [writeTex, readTex];
       [readFB, writeFB] = [writeFB, readFB];
       
-      // Enable additive blending
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-      // // Clear white for test
-      // gl.clearColor(1, 1, 1, 1);
-      // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      
-      gl.bindVertexArray(trailVAO);
-      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
-
-      // Disable blending after drawing trails
-      gl.disable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
       // --- Render Pass ---
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-
-
-      // --- Mask Background ---
+      clearScreen();
       drawRock();
-
-      // --- Enable Blending ---
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      
-      // --- Render Particles ---
       drawParticles();
-      
-      // --- Render Trails ---
       drawTrailsOnScreen();
+      // --- End Render Pass ---
 
-      // --- Disable Blending ---
-
-      gl.disable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
-      // --- Track FPS ---
       trackFPS();
 
       requestAnimationFrame(renderLoop);
