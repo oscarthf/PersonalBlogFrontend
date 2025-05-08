@@ -7,6 +7,10 @@ import renderFS from "../shaders/render.frag?raw";
 import maskVS from "../shaders/mask.vert?raw";
 import maskFS from "../shaders/mask.frag?raw";
 import sidemaskFS from "../shaders/sidemask.frag?raw";
+import trailLineVS from "../shaders/trailLine.vert?raw";
+import trailLineFS from "../shaders/trailLine.frag?raw";
+import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
+import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 
 // const PARTICLE_COUNT = 1024;
 const PARTICLE_COUNT = 324;
@@ -146,7 +150,8 @@ export default function WebGLCanvas({
     const renderProgram = createProgram(renderVS, renderFS);
     const maskProgram = createProgram(maskVS, maskFS);
     const sideMaskProgram = createProgram(fullscreenVS, sidemaskFS);
-
+    const trailLineProgram = createProgram(trailLineVS, trailLineFS);
+    const trailDisplayProgram = createProgram(trailDisplayVS, trailDisplayFS);
     // === Textures ===
     
     const spriteImage = new Image();
@@ -167,6 +172,20 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
       spriteReady = true;
     };
+
+    // === Framebuffer for trails ===
+    const trailTex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, trailTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE, CANVAS_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const trailFB = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, trailTex, 0);
+
 
     // === Framebuffer for side mask ===
     const sideMaskTex = gl.createTexture()!;
@@ -337,6 +356,41 @@ export default function WebGLCanvas({
 
       [readTex, writeTex] = [writeTex, readTex];
       [readFB, writeFB] = [writeFB, readFB];
+      
+      // --- Draw Particle Trails ---
+      gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
+      gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+      gl.useProgram(trailLineProgram);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
+      
+      // VAO not needed here; simple buffer bind is enough
+      gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_prevData"), 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, writeTex); // current
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_currData"), 1);
+
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+
+      // Enable additive blending
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+      // Each particle emits a line → 2 vertices
+      gl.drawArrays(gl.LINES, 0, PARTICLE_COUNT * 2);
+
+      // Disable blending after drawing trails
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+
 
       // --- Render Pass ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -379,6 +433,19 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(renderProgram, "u_particle_radius"), sprite_quad_size);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+      
+      // --- Render Trails ---
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); // render to screen
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      gl.useProgram(trailDisplayProgram);
+      gl.bindVertexArray(fullscreenVAO);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, trailTex);
+      gl.uniform1i(gl.getUniformLocation(trailDisplayProgram, "u_texture"), 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
 
       // --- Disable Blending ---
 
