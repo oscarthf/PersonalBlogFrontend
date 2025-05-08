@@ -10,6 +10,7 @@ uniform float u_particleTextureSize;
 uniform float u_canvasSize;
 
 void main() {
+  
   ivec2 fragIndex = ivec2(v_uv * u_particleTextureSize);
   vec2 fragUV = (vec2(fragIndex) + 0.5) / u_particleTextureSize;
 
