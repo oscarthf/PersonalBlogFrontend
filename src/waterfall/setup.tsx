@@ -19,37 +19,68 @@ export const loadSpriteImage = (gl: WebGLRenderingContext,
     return spriteTex;
 
 }
-
 export const createTrailIndicesAndCorners = (particleCount: number, particleTextureSize: number) => {
-
-    // One quad (2 triangles = 6 verts) per particle for trail ribbons
     const TRAIL_VERTS_PER_PARTICLE = 6;
-    const trailIndices = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE * 2); // 2 floats per a_index (x, y)
-    const trailCorners = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);     // 1 float per a_corner
+    const trailIndices = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE * 2);
+    const trailCorners = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
+    const trailSegments = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
 
-    // This pattern defines the side of the quad: -1 = left, +1 = right
-    const quadPattern = [
-        [-1, 0], [1, 0], [-1, 1],
-        [-1, 1], [1, 0], [1, 1],
-    ];
+    const cornerPattern = [-1, 1, -1, -1, 1, 1]; // left/right
+    const segmentPattern = [0, 0, 1, 1, 0, 1];   // prev (0) or curr (1)
+
+    const particleTextureSizeInt = Math.floor(particleTextureSize);
 
     for (let i = 0; i < particleCount; i++) {
-        const texX = i % particleTextureSize;
-        const texY = Math.floor(i / particleTextureSize);
+        const texX = i % particleTextureSizeInt;
+        const texY = Math.floor(i / particleTextureSizeInt);
         for (let v = 0; v < 6; v++) {
             const dst = i * 6 + v;
             trailIndices[dst * 2 + 0] = texX;
             trailIndices[dst * 2 + 1] = texY;
-            trailCorners[dst] = quadPattern[v][0]; // -1 or +1 (left/right)
+            trailCorners[dst] = cornerPattern[v];
+            trailSegments[dst] = segmentPattern[v];
         }
     }
 
     return {
-        trailIndices: trailIndices,
-        trailCorners: trailCorners,
+        trailIndices,
+        trailCorners,
+        trailSegments,
     };
+};
 
-}
+// export const createTrailIndicesAndCorners = (particleCount: number, particleTextureSize: number) => {
+
+//     // One quad (2 triangles = 6 verts) per particle for trail ribbons
+//     const TRAIL_VERTS_PER_PARTICLE = 6;
+//     const trailIndices = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE * 2); // 2 floats per a_index (x, y)
+//     const trailCorners = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);     // 1 float per a_corner
+
+//     // This pattern defines the side of the quad: -1 = left, +1 = right
+//     const quadPattern = [
+//         [-1, 0], [1, 0], [-1, 1],
+//         [-1, 1], [1, 0], [1, 1],
+//     ];
+
+//     const particleTextureSizeInt = Math.floor(particleTextureSize);
+
+//     for (let i = 0; i < particleCount; i++) {
+//         const texX = i % particleTextureSizeInt;
+//         const texY = Math.floor(i / particleTextureSizeInt);
+//         for (let v = 0; v < 6; v++) {
+//             const dst = i * 6 + v;
+//             trailIndices[dst * 2 + 0] = texX;
+//             trailIndices[dst * 2 + 1] = texY;
+//             trailCorners[dst] = quadPattern[v][0]; // -1 or +1 (left/right)
+//         }
+//     }
+
+//     return {
+//         trailIndices: trailIndices,
+//         trailCorners: trailCorners,
+//     };
+
+// }
 
 
 export const createParticleIndices = (particleCount: number, particleTextureSize: number) => {

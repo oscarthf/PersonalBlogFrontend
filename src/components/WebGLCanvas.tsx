@@ -158,12 +158,16 @@ export default function WebGLCanvas({
 
     function drawTrails() {
 
+      gl.useProgram(trailLineProgram);
+      
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      gl.useProgram(trailLineProgram);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.5);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
       
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
@@ -175,11 +179,14 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
 
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
       gl.bindVertexArray(trailVAO);
+      
+      // clear white for test
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
+      // gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -227,7 +234,7 @@ export default function WebGLCanvas({
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -259,7 +266,11 @@ export default function WebGLCanvas({
 
     function setupTrails() {
 
-      const { trailIndices, trailCorners } = createTrailIndicesAndCorners(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
+      const { 
+        trailIndices, 
+        trailCorners,
+        trailSegments
+       } = createTrailIndicesAndCorners(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
 
       const trailIndexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
@@ -268,7 +279,15 @@ export default function WebGLCanvas({
       const trailCornerBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, trailCorners, gl.STATIC_DRAW);
-  
+
+      const trailSegmentBuffer = gl.createBuffer()!;
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailSegmentBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, trailSegments, gl.STATIC_DRAW);
+
+      const trailVAO = setupTrailVertices(trailIndexBuffer, 
+                                          trailCornerBuffer,
+                                          trailSegmentBuffer);
+
       // === Framebuffer for trails ===
       const trailTex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
@@ -281,8 +300,19 @@ export default function WebGLCanvas({
       const trailFB = gl.createFramebuffer()!;
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, trailTex, 0);
+      const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error("Framebuffer incomplete:", status.toString(16));
+      }
 
-      return { trailIndexBuffer, trailCornerBuffer, trailTex, trailFB };
+      return { 
+        trailVAO, 
+        trailIndexBuffer, 
+        trailCornerBuffer, 
+        trailSegmentBuffer,
+        trailTex, 
+        trailFB 
+      };
   
     }
 
@@ -347,11 +377,13 @@ export default function WebGLCanvas({
 
     }
 
-    function setupTrailVertices() {
+    function setupTrailVertices(trailIndexBuffer: WebGLBuffer, 
+                                trailCornerBuffer: WebGLBuffer,
+                                trailSegmentBuffer: WebGLBuffer) {
 
       const trailVAO = gl.createVertexArray()!;
       gl.bindVertexArray(trailVAO);
-  
+
       // a_index (vec2)
       gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
       gl.enableVertexAttribArray(0);
@@ -361,6 +393,11 @@ export default function WebGLCanvas({
       gl.bindBuffer(gl.ARRAY_BUFFER, trailCornerBuffer);
       gl.enableVertexAttribArray(1);
       gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
+
+      // a_segment (vec2)
+      gl.bindBuffer(gl.ARRAY_BUFFER, trailSegmentBuffer);
+      gl.enableVertexAttribArray(2);
+      gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
   
       gl.bindVertexArray(null);
 
@@ -472,12 +509,29 @@ export default function WebGLCanvas({
 
     //
 
-    const { trailIndexBuffer, trailCornerBuffer, trailTex, trailFB } = setupTrails();
-    const { sideMaskTex, sideMaskFB } = setupSideMask();
+    const { 
+      trailVAO, 
+      trailIndexBuffer, 
+      trailCornerBuffer, 
+      trailSegmentBuffer,
+      trailTex, 
+      trailFB 
+    } = setupTrails();
+    const { 
+      sideMaskTex, 
+      sideMaskFB 
+    } = setupSideMask();
     const indexBuffer = setupParticleIndices();
-    const { quadVBO, spriteVAO } = setupParticleVertices(PARTICLE_QUAD_SIZE);
-    const trailVAO = setupTrailVertices();
-    let { texA: readTex, texB: writeTex, fbA: readFB, fbB: writeFB } = setupSimulationTextures();
+    const { 
+      quadVBO, 
+      spriteVAO
+    } = setupParticleVertices(PARTICLE_QUAD_SIZE);
+    let { 
+      texA: readTex, 
+      texB: writeTex, 
+      fbA: readFB, 
+      fbB: writeFB 
+    } = setupSimulationTextures();
     const fullscreenVAO = setupFullscreenQuad();
 
     setupSpriteQuad();
