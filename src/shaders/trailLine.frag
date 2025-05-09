@@ -1,9 +1,12 @@
 #version 300 es
 precision highp float;
+
+in float v_fade;
 out vec4 outColor;
 
 void main() {
-  // vec2 uv = gl_FragCoord.xy / vec2(512.0); // normalize to canvas
-  // outColor = vec4(uv, 0.0, 1.0);
-  outColor = vec4(1.0, 1.0, 0.0, 1.0);
+  float red = 1.0 * v_fade;
+  float green = 1.0 * v_fade;
+  float blue = 1.0 * v_fade;
+  outColor = vec4(red, green, blue, 1.0);
 }

@@ -175,6 +175,7 @@ export default function WebGLCanvas({
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
@@ -408,7 +409,7 @@ export default function WebGLCanvas({
       // a_segment (vec2)
       gl.bindBuffer(gl.ARRAY_BUFFER, trailSegmentBuffer);
       gl.enableVertexAttribArray(2);
-      gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
   
       gl.bindVertexArray(null);
 
@@ -590,6 +591,9 @@ export default function WebGLCanvas({
       flipReadWriteParticleTextures();
       
       renderPass();
+
+      const err = gl.getError();
+      if (err !== gl.NO_ERROR) console.warn("GL Error:", err);
 
       trackFPS();
 

@@ -6,6 +6,7 @@ layout(location = 1) in float a_corner; // -1.0 or +1.0
 layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 
 uniform float u_maxDistance;
+uniform float u_fadeDistance;
 uniform float u_halfWidth;
 
 uniform sampler2D u_data_0;
@@ -13,7 +14,6 @@ uniform sampler2D u_data_1;
 uniform sampler2D u_data_2;
 uniform sampler2D u_data_3;
 uniform sampler2D u_data_4;
-
 
 uniform float u_size;
 
@@ -58,10 +58,8 @@ void main() {
     return;
   }
 
-  // // Fade based on distance (0 = bright, maxLen = faint)
-  // float fade = clamp(length(dir) / u_maxDistance, 0.0, 1.0);
-  // v_fade = 1.0 - fade;
-  v_fade = 1.0;// try fade later
+  float fade = clamp(length(dir) / u_fadeDistance, 0.0, 1.0);
+  v_fade = 1.0 - fade;
 
   vec2 center = top_or_bottom ? curr : prev;
   vec2 normal = normalize(vec2(-dir.y, dir.x));
