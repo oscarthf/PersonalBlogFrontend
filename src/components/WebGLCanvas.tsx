@@ -14,6 +14,7 @@ import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 import { createProgram, createFramebuffer, createInitialParticleData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
+const MAX_FRAME_CYCLE_LENGTH = 16;
 // const PARTICLE_COUNT = 1024;
 const PARTICLE_COUNT = 324;
 // const PARTICLE_COUNT = 49;
@@ -53,6 +54,7 @@ export default function WebGLCanvas({
 
     let lastTime = performance.now();
     let frames = 0;
+    let frame_number = 0;
     let fps = 0;
 
     let currentReadIndex = 0;
@@ -180,6 +182,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), TRAIL_HISTORY_LENGTH - 1);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frame_number"), frame_number);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
@@ -228,20 +231,21 @@ export default function WebGLCanvas({
 
     function drawParticles() {
       
-      gl.useProgram(renderProgram);
+      gl.useProgram(renderParticlesProgram);
       gl.bindVertexArray(spriteVAO);
 
       gl.activeTexture(gl.TEXTURE0);
       // gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]);
-      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_data"), 0);
       
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-      gl.uniform1i(gl.getUniformLocation(renderProgram, "u_sprite"), 1);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_sprite"), 1);
 
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
-      gl.uniform1f(gl.getUniformLocation(renderProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frame_number"), frame_number);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
 
@@ -269,6 +273,11 @@ export default function WebGLCanvas({
     }
 
     function trackFPS() {
+
+      frame_number++;
+      if (frame_number >= MAX_FRAME_CYCLE_LENGTH) {
+        frame_number = 0;
+      }
 
       frames++;
       const now = performance.now();
@@ -353,7 +362,7 @@ export default function WebGLCanvas({
       const indexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-      const aIndex = gl.getAttribLocation(renderProgram, "a_index");
+      const aIndex = gl.getAttribLocation(renderParticlesProgram, "a_index");
       gl.enableVertexAttribArray(aIndex);
       gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
 
@@ -495,7 +504,7 @@ export default function WebGLCanvas({
     function createPrograms() {
       
       const computeProgram = createProgram(gl, fullscreenVS, computeFS);
-      const renderProgram = createProgram(gl, renderVS, renderFS);
+      const renderParticlesProgram = createProgram(gl, renderVS, renderFS);
       const maskProgram = createProgram(gl, maskVS, maskFS);
       const sideMaskProgram = createProgram(gl, fullscreenVS, sidemaskFS);
       const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
@@ -503,7 +512,7 @@ export default function WebGLCanvas({
 
       return {
         computeProgram,
-        renderProgram,
+        renderParticlesProgram,
         maskProgram,
         sideMaskProgram,
         trailLineProgram,
@@ -515,7 +524,7 @@ export default function WebGLCanvas({
     // === Programs ===
 
     const { computeProgram,
-            renderProgram, 
+            renderParticlesProgram, 
             maskProgram, 
             sideMaskProgram, 
             trailLineProgram, 

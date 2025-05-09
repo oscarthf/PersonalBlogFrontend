@@ -8,6 +8,7 @@ layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 uniform float u_maxDistance;
 uniform float u_fadeDistance;
 uniform float u_halfWidth;
+uniform int u_frame_number;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -24,7 +25,7 @@ uniform sampler2D u_data_11;
 uniform sampler2D u_data_12;
 uniform sampler2D u_data_13;
 uniform sampler2D u_data_14;
-uniform sampler2D u_data_15;
+uniform sampler2D u_data_15;// Max for most graphics cards
 
 uniform float u_size;
 
@@ -36,10 +37,7 @@ void main() {
   int segment_i = int(a_segment);
 
   int segment_index = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
-  bool top_or_bottom = segment_i % 2 == 1;// 0 if curr (bottom), 1 if prev (top)
-
-  // vec2 prev = vec2(0.0);// xy position of the previous segment
-  // vec2 curr = vec2(0.0);// xy position of the current segment
+  bool top_or_bottom = segment_i % 2 == 1;// false if curr (bottom), true if prev (top)
 
   vec4 prev_full = vec4(0.0);// xy position of the previous segment
   vec4 curr_full = vec4(0.0);// xy position of the current segment

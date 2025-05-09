@@ -7,6 +7,7 @@ layout(location = 1) in vec2 a_index;     // particle tex coords
 uniform sampler2D u_data;
 uniform float u_size;
 uniform float u_particle_radius; // 0.01
+uniform int u_frame_number;
 
 out vec2 v_uv;
 
