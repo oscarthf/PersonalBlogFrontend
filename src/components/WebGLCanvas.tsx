@@ -181,12 +181,11 @@ export default function WebGLCanvas({
 
       gl.bindVertexArray(trailVAO);
       
-      // clear white for test
-      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      // // clear white for test
+      gl.clearColor(0.0, 0.0, 0.0, 0.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
-      // gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -548,8 +547,8 @@ export default function WebGLCanvas({
       
       clearScreen();
       drawRock();
-      drawParticles();
       drawTrailsOnScreen();
+      drawParticles();
 
     }
 
