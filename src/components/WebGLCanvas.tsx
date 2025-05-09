@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 import fullscreenVS from "../shaders/fullscreen.vert?raw";
 import computeFS from "../shaders/compute.frag?raw";
-import renderVS from "../shaders/render.vert?raw";
-import renderFS from "../shaders/render.frag?raw";
+import renderVS from "../shaders/renderParticles.vert?raw";
+import renderFS from "../shaders/renderParticles.frag?raw";
 import maskVS from "../shaders/mask.vert?raw";
 import maskFS from "../shaders/mask.frag?raw";
 import sidemaskFS from "../shaders/sidemask.frag?raw";
