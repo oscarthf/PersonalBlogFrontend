@@ -7,8 +7,9 @@ layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 
 uniform float u_maxDistance;
 uniform float u_fadeDistance;
+uniform int u_bezierResolution;
 uniform float u_halfWidth;
-uniform int u_frame_number;
+uniform int u_frameNumber;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -26,19 +27,39 @@ uniform sampler2D u_data_12;
 uniform sampler2D u_data_13;
 uniform sampler2D u_data_14;// Max for most graphics cards --- minus 1 for animation offsets
 
-uniform sampler2D u_animation_offsets;
+uniform sampler2D u_animationOffsets;
 
 uniform float u_size;
 
 out float v_visible;
 out vec2 v_uv;
 
+vec2 bezier(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+  float u = 1.0 - t;
+  return u * u * u * p0 + 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
+}
+
+vec2 bezierDerivative(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+  float u = 1.0 - t;
+  return -3.0 * u * u * p0 + 3.0 * (3.0 * u * u - 2.0 * u) * p1 + 3.0 * (2.0 * t - 3.0 * t * t) * p2 + 3.0 * t * t * p3;
+}
+
 void main() {
   vec2 texCoord = (a_index + 0.5) / u_size;
+
   int segment_i = int(a_segment);
 
-  int segment_index = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
+  int segment_index_pre = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
+    
+  int bezier_curve_index = segment_index_pre % (u_bezierResolution - 1);
+
+  int segment_index = int(segment_index_pre / (u_bezierResolution - 1));
+
   bool top_or_bottom = segment_i % 2 == 1;// false if curr (bottom), true if prev (top)
+
+  if (top_or_bottom) {
+    bezier_curve_index = bezier_curve_index + 1;
+  }
 
   vec4 prev_full = vec4(0.0);// xy position of the previous segment
   vec4 curr_full = vec4(0.0);// xy position of the current segment
@@ -110,15 +131,41 @@ void main() {
     return;
   }
 
-  vec2 center = top_or_bottom ? prev : curr;
-  vec2 normal_dir = top_or_bottom ? prev_dir : curr_dir;
+  float lenRatio = sqrt(len2) / u_maxDistance;
+
+  // BEFORE BEZIER CURVE
+
+  // vec2 center = top_or_bottom ? prev : curr;
+  // vec2 normal_dir = top_or_bottom ? prev_dir : curr_dir;
+  // vec2 normal = normalize(vec2(-normal_dir.y, normal_dir.x));
+  // vec2 offset = normal * a_corner * u_halfWidth;
+
+  // WITH BEZIER CURVE
+
+  vec2 normalized_curr_dir = normalize(curr_dir);
+  vec2 normalized_prev_dir = normalize(prev_dir);
+
+  vec2 p0 = curr;
+  vec2 p1 = curr - normalized_curr_dir * lenRatio * u_halfWidth;
+  vec2 p2 = prev + normalized_prev_dir * lenRatio * u_halfWidth;
+  vec2 p3 = prev;
+
+  float t = float(bezier_curve_index) / float(u_bezierResolution - 1);
+
+  vec2 center = bezier(t, p0, p1, p2, p3);
+  vec2 normal_dir = bezierDerivative(t, p0, p1, p2, p3);
   vec2 normal = normalize(vec2(-normal_dir.y, normal_dir.x));
   vec2 offset = normal * a_corner * u_halfWidth;
+
+  //
 
   vec2 pos = center + offset;
 
   v_uv.x = (a_corner + 1.0) * 0.5;
-  v_uv.y = top_or_bottom ? (float(segment_index) + 1.0) / u_fadeDistance : float(segment_index) / u_fadeDistance;
-  
+  // v_uv.y = top_or_bottom ? (float(segment_index) + 1.0) / u_fadeDistance : float(segment_index) / u_fadeDistance;
+  float pre_y = top_or_bottom ? (float(segment_index) + 1.0) : float(segment_index);
+  pre_y = pre_y * float(u_bezierResolution - 1) + float(bezier_curve_index);
+  v_uv.y = pre_y / (u_fadeDistance * float(u_bezierResolution - 1));
+
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }

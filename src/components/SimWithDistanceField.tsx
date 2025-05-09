@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import ImageDistanceField from "./ImageDistanceField";
 import WebGLCanvas from "./WebGLCanvas";
 
-const particleRadius = 30; // Adjust this value as needed
-const maskRadius = 30; // Adjust this value as needed
+const repulseParticleRadius = 50;
+const particleRadius = 30;
+const maskRadius = 30;
 
 export default function SimWithDistanceField() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -44,6 +45,7 @@ export default function SimWithDistanceField() {
                 maskMap={maskTex}
                 mask_radius={maskRadius}
                 particle_radius={particleRadius}
+                repulse_particle_radius={repulseParticleRadius}
             />
         </>
       )}

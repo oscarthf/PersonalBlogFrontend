@@ -5,10 +5,10 @@ layout(location = 0) in vec2 a_quadPos;   // [-0.01, 0.01]
 layout(location = 1) in vec2 a_index;     // particle tex coords
 
 uniform sampler2D u_data;
-uniform sampler2D u_animation_offsets;
+uniform sampler2D u_animationOffsets;
 uniform float u_size;
 uniform float u_particle_radius; // 0.01
-uniform int u_frame_number;
+uniform int u_frameNumber;
 
 out vec2 v_uv;
 
