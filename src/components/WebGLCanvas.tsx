@@ -24,7 +24,9 @@ const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
 
-const TRAIL_HISTORY_LENGTH = 5;
+const TRAIL_HISTORY_LENGTH = 15;
+const TRAIL_HISTORY_STEP_SIZE = 4;
+const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -174,7 +176,7 @@ export default function WebGLCanvas({
 
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
       
@@ -182,7 +184,7 @@ export default function WebGLCanvas({
 
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
-        const texIndex = (currentWriteIndex - i + TRAIL_HISTORY_LENGTH) % TRAIL_HISTORY_LENGTH;
+        const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
         gl.activeTexture(gl.TEXTURE0 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
         gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i);
@@ -424,7 +426,7 @@ export default function WebGLCanvas({
       const texList = [];
       const fbList = [];
 
-      for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
+      for (let i = 0; i < REAL_TRAIL_HISTORY_LENGTH; i++) {
         const tex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, particleData);
