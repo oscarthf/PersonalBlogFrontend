@@ -179,7 +179,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), 0.1);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
 
