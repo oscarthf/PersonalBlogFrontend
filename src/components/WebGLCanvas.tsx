@@ -16,8 +16,8 @@ import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, c
 
 const MAX_FRAME_CYCLE_LENGTH = 16;
 // const PARTICLE_COUNT = 1024;
-const PARTICLE_COUNT = 324;
-// const PARTICLE_COUNT = 49;
+// const PARTICLE_COUNT = 324;
+const PARTICLE_COUNT = 49;
 const PARTICLE_SPAWN_Y_MARGIN = 0.25;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
@@ -27,11 +27,11 @@ const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
 
-const TRAIL_HISTORY_LENGTH = 4;
+const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 4;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
-const BEZIER_CURVE_RESOLUTION = 4;
+const BEZIER_CURVE_RESOLUTION = 8;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;

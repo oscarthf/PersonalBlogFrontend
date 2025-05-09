@@ -131,6 +131,8 @@ void main() {
     return;
   }
 
+  float lenRatio = sqrt(len2) / u_maxDistance;
+
   // BEFORE BEZIER CURVE
 
   // vec2 center = top_or_bottom ? prev : curr;
@@ -140,10 +142,14 @@ void main() {
 
   // WITH BEZIER CURVE
 
-  vec2 p0 = prev;
-  vec2 p1 = prev + prev_dir;
-  vec2 p2 = curr - curr_dir;
-  vec2 p3 = curr;
+  vec2 normalized_curr_dir = normalize(curr_dir);
+  vec2 normalized_prev_dir = normalize(prev_dir);
+
+  vec2 p0 = curr;
+  vec2 p1 = curr - normalized_curr_dir * lenRatio * u_halfWidth;
+  vec2 p2 = prev + normalized_prev_dir * lenRatio * u_halfWidth;
+  vec2 p3 = prev;
+
   float t = float(bezier_curve_index) / float(u_bezierResolution - 1);
 
   vec2 center = bezier(t, p0, p1, p2, p3);
