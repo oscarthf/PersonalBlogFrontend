@@ -23,6 +23,7 @@ const INITIAL_ROCK_X = 0.4;
 const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
+const TRAIL_HISTORY_LENGTH = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -48,6 +49,9 @@ export default function WebGLCanvas({
     let lastTime = performance.now();
     let frames = 0;
     let fps = 0;
+
+    let currentReadIndex = 0;
+    let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
     canvas.width = CANVAS_SIZE;
@@ -104,7 +108,8 @@ export default function WebGLCanvas({
       gl.bindVertexArray(fullscreenVAO);
 
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      // gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
@@ -117,7 +122,8 @@ export default function WebGLCanvas({
     function stepSimulation() {
 
       gl.useProgram(computeProgram);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, readWriteFBList[currentWriteIndex]);
       gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
       gl.bindVertexArray(fullscreenVAO);
 
@@ -126,7 +132,8 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(computeProgram, "u_sideMask"), 4);
 
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      // gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(computeProgram, "u_data"), 0);
 
       if (distanceMap && dirXMap && dirYMap) {
@@ -156,7 +163,7 @@ export default function WebGLCanvas({
 
     }
 
-    function drawTrails() {
+    function drawTrailsToBuffer() {
 
       gl.useProgram(trailLineProgram);
       
@@ -170,11 +177,13 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
       
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
+      // gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]); // previous
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_prevData"), 0);
 
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, writeTex); // current
+      // gl.bindTexture(gl.TEXTURE_2D, writeTex); // current
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]); // current
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_currData"), 1);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
@@ -215,7 +224,8 @@ export default function WebGLCanvas({
       gl.bindVertexArray(spriteVAO);
 
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, readTex);
+      // gl.bindTexture(gl.TEXTURE_2D, readTex);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
       
       gl.activeTexture(gl.TEXTURE1);
@@ -306,9 +316,6 @@ export default function WebGLCanvas({
 
       return { 
         trailVAO, 
-        trailIndexBuffer, 
-        trailCornerBuffer, 
-        trailSegmentBuffer,
         trailTex, 
         trailFB 
       };
@@ -407,16 +414,35 @@ export default function WebGLCanvas({
     function setupSimulationTextures() {
 
       const texA = createDataTexture(gl, PARTICLE_TEXTURE_SIZE);
-      const texB = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, texB);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  
       const fbA = createFramebuffer(gl, texA);
-      const fbB = createFramebuffer(gl, texB);
 
-      return { texA, texB, fbA, fbB };
+      // const texB = gl.createTexture()!;
+      // gl.bindTexture(gl.TEXTURE_2D, texB);
+      // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      // const fbB = createFramebuffer(gl, texB);
+
+      // return { texA, texB, fbA, fbB };
+
+      const texList = [texA];
+      const fbList = [fbA];
+
+      for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
+        const texB = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, texB);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        const fbB = createFramebuffer(gl, texB);
+        texList.push(texB);
+        fbList.push(fbB);
+      }
+
+      return {
+        texList,
+        fbList
+      };
 
     }
 
@@ -510,9 +536,6 @@ export default function WebGLCanvas({
 
     const { 
       trailVAO, 
-      trailIndexBuffer, 
-      trailCornerBuffer, 
-      trailSegmentBuffer,
       trailTex, 
       trailFB 
     } = setupTrails();
@@ -526,10 +549,12 @@ export default function WebGLCanvas({
       spriteVAO
     } = setupParticleVertices(PARTICLE_QUAD_SIZE);
     let { 
-      texA: readTex, 
-      texB: writeTex, 
-      fbA: readFB, 
-      fbB: writeFB 
+      // texA: readTex, 
+      // texB: writeTex, 
+      texList: readWriteTexList,
+      // fbA: readFB, 
+      // fbB: writeFB 
+      fbList: readWriteFBList
     } = setupSimulationTextures();
     const fullscreenVAO = setupFullscreenQuad();
 
@@ -539,7 +564,7 @@ export default function WebGLCanvas({
 
       preProcessParticles();
       stepSimulation();
-      drawTrails();
+      drawTrailsToBuffer();
 
     }
 
@@ -554,9 +579,13 @@ export default function WebGLCanvas({
 
     function flipReadWriteParticleTextures() {
 
-      [readTex, writeTex] = [writeTex, readTex];
-      [readFB, writeFB] = [writeFB, readFB];
-      
+      // [readTex, writeTex] = [writeTex, readTex];
+      // [readFB, writeFB] = [writeFB, readFB];
+
+      const numberOfTextures = readWriteTexList.length;
+      currentReadIndex = (currentReadIndex + 1) % numberOfTextures;
+      currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
+
     }
     function renderLoop() {
 
