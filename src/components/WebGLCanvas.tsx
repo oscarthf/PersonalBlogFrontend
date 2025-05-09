@@ -41,6 +41,7 @@ interface WebGLCanvasProps {
   maskMap?: WebGLTexture;
   mask_radius: number;
   particle_radius: number;
+  repulse_particle_radius: number;
 }
 
 export default function WebGLCanvas({
@@ -51,6 +52,7 @@ export default function WebGLCanvas({
   maskMap,
   mask_radius,
   particle_radius,
+  repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
 
@@ -120,7 +122,7 @@ export default function WebGLCanvas({
       // gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSize"), CANVAS_SIZE);
 
@@ -165,6 +167,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
