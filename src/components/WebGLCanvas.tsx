@@ -11,7 +11,7 @@ import trailLineVS from "../shaders/trailLine.vert?raw";
 import trailLineFS from "../shaders/trailLine.frag?raw";
 import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
 import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
-import { createProgram, createFramebuffer, createInitialParticleData } from "../web_gl_util/general";
+import { createProgram, createFramebuffer, createInitialParticleData, createAnimationOffsetsData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
 const MAX_FRAME_CYCLE_LENGTH = 16;
@@ -187,14 +187,21 @@ export default function WebGLCanvas({
       
       ///////////
 
+      // u_animation_offsets
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animation_offsets"), 0);
+
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
         // TODO: reduce step size at low FPS!!!
         const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
-        gl.activeTexture(gl.TEXTURE0 + i);
+        gl.activeTexture(gl.TEXTURE1 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
-        gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i);
+        gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i + 1);
       }
+
+
 
       ///////////
 
@@ -235,13 +242,16 @@ export default function WebGLCanvas({
       gl.bindVertexArray(spriteVAO);
 
       gl.activeTexture(gl.TEXTURE0);
-      // gl.bindTexture(gl.TEXTURE_2D, readTex);
-      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_data"), 0);
-      
+      gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_animation_offsets"), 0);
+
       gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_data"), 1);
+      
+      gl.activeTexture(gl.TEXTURE2);
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_sprite"), 1);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_sprite"), 2);
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
@@ -449,7 +459,15 @@ export default function WebGLCanvas({
         fbList.push(fb);
       }
 
+      const offsetsData = createAnimationOffsetsData(PARTICLE_TEXTURE_SIZE);
+      const offsetsTex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, offsetsTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, offsetsData);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      
       return {
+        offsetsTex,
         texList,
         fbList
       };
@@ -559,6 +577,7 @@ export default function WebGLCanvas({
       spriteVAO
     } = setupParticleVertices(PARTICLE_QUAD_SIZE);
     let { 
+      offsetsTex: animationOffsetsTex,
       texList: readWriteTexList,
       fbList: readWriteFBList
     } = setupSimulationTextures();

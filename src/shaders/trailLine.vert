@@ -24,8 +24,9 @@ uniform sampler2D u_data_10;
 uniform sampler2D u_data_11;
 uniform sampler2D u_data_12;
 uniform sampler2D u_data_13;
-uniform sampler2D u_data_14;
-uniform sampler2D u_data_15;// Max for most graphics cards
+uniform sampler2D u_data_14;// Max for most graphics cards --- minus 1 for animation offsets
+
+uniform sampler2D u_animation_offsets;
 
 uniform float u_size;
 
@@ -84,9 +85,6 @@ void main() {
   } else if (segment_index == 13) {
     curr_full = texture(u_data_13, texCoord);
     prev_full = texture(u_data_14, texCoord);
-  } else if (segment_index == 14) {
-    curr_full = texture(u_data_14, texCoord);
-    prev_full = texture(u_data_15, texCoord);
   } else {
     //
   }

@@ -42,6 +42,16 @@ export const createInitialParticleData = (size: number,
     return data;
 }
 
+export const createAnimationOffsetsData = (size: number): Float32Array => {
+    const data = new Float32Array(size * size * 4);
+    for (let i = 0; i < size * size; i++) {
+        const x = Math.random();
+        const y = Math.random();
+        data.set([x, y, 0, 0], i * 4);
+    }
+    return data;
+}
+
 export const createFramebuffer = (gl: WebGLRenderingContext, texture: WebGLTexture): WebGLFramebuffer => {
     const fb = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
