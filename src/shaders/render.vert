@@ -10,6 +10,15 @@ uniform float u_particle_radius; // 0.01
 
 out vec2 v_uv;
 
+float atantwo(float y, float x) {
+  if (x > 0.0) return atan(y, x);
+  if (x < 0.0 && y >= 0.0) return atan(y, x) + 3.14159265358979323846;
+  if (x < 0.0 && y < 0.0) return atan(y, x) - 3.14159265358979323846;
+  if (x == 0.0 && y > 0.0) return 1.57079632679489661923;
+  if (x == 0.0 && y < 0.0) return -1.57079632679489661923;
+  return 0.0; // undefined
+}
+
 void main() {
   vec2 uv = (a_index + 0.5) / u_size;
   vec4 data = texture(u_data, uv);
@@ -17,7 +26,7 @@ void main() {
   vec2 vel = data.zw;
 
   // Compute angle from velocity
-  float angle = atan(vel.y, vel.x);
+  float angle = -atantwo(vel.y, vel.x);
   float c = cos(angle);
   float s = sin(angle);
 

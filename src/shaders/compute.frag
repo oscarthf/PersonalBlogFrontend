@@ -13,7 +13,7 @@ uniform sampler2D u_sideMask;
 
 uniform float u_particleTextureSize;
 uniform float u_canvasSize;
-uniform float u_mask_radius;
+uniform float u_spawnYMargin;
 uniform float u_particle_radius;
 
 uniform float rock_x;
@@ -249,7 +249,7 @@ void main() {
   pos.x = mod(mod(pos.x, u_canvasSize) + u_canvasSize, u_canvasSize);
   // pos.y = mod(mod(pos.y, u_canvasSize) + u_canvasSize, u_canvasSize);
 
-  if (pos.y < -0.25 * u_canvasSize) {
+  if (pos.y < -u_spawnYMargin * u_canvasSize) {
     pos.y = float(u_canvasSize) * 1.25;
     // set pos x to a random value between 0 and canvas size
     pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSize;

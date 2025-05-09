@@ -15,8 +15,9 @@ import { createProgram, createFramebuffer, createInitialParticleData } from "../
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
 // const PARTICLE_COUNT = 1024;
-// const PARTICLE_COUNT = 324;
-const PARTICLE_COUNT = 49;
+const PARTICLE_COUNT = 324;
+// const PARTICLE_COUNT = 49;
+const PARTICLE_SPAWN_Y_MARGIN = 0.25;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 const CANVAS_SIZE = 512;
@@ -25,7 +26,7 @@ const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
 
-const TRAIL_HISTORY_LENGTH = 15;
+const TRAIL_HISTORY_LENGTH = 4;
 const TRAIL_HISTORY_STEP_SIZE = 4;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
@@ -160,7 +161,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_mask_radius"), parseFloat(mask_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -178,13 +179,14 @@ export default function WebGLCanvas({
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), 0.1);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), TRAIL_HISTORY_LENGTH - 1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
 
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
+        // TODO: reduce step size at low FPS!!!
         const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
         gl.activeTexture(gl.TEXTURE0 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
@@ -421,7 +423,8 @@ export default function WebGLCanvas({
   
     function setupSimulationTextures() {
 
-      const particleData = createInitialParticleData(PARTICLE_TEXTURE_SIZE);
+      const particleData = createInitialParticleData(PARTICLE_TEXTURE_SIZE,
+                                                     PARTICLE_SPAWN_Y_MARGIN);
 
       const texList = [];
       const fbList = [];

@@ -29,14 +29,14 @@ uniform sampler2D u_data_15;
 uniform float u_size;
 
 out float v_visible;
-out float v_fade;
+out vec2 v_uv;
 
 void main() {
   vec2 texCoord = (a_index + 0.5) / u_size;
   int segment_i = int(a_segment);
 
   int segment_index = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
-  bool top_or_bottom = segment_i % 2 == 0;// 0 if curr (bottom), 1 if prev (top)
+  bool top_or_bottom = segment_i % 2 == 1;// 0 if curr (bottom), 1 if prev (top)
 
   // vec2 prev = vec2(0.0);// xy position of the previous segment
   // vec2 curr = vec2(0.0);// xy position of the current segment
@@ -109,15 +109,10 @@ void main() {
 
   v_visible = 1.0;
   if (len2 > maxLen2 || len2 == 0.0) {
-    v_fade = 1.0;
     v_visible = 0.0;
     gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
     return;
   }
-
-  float fade = a_segment / 32.0;
-  v_fade = 1.0 - fade;
-  // v_fade = 1.0;
 
   vec2 center = top_or_bottom ? prev : curr;
   vec2 normal_dir = top_or_bottom ? prev_dir : curr_dir;
@@ -125,6 +120,9 @@ void main() {
   vec2 offset = normal * a_corner * u_halfWidth;
 
   vec2 pos = center + offset;
+
+  v_uv.x = (a_corner + 1.0) * 0.5;
+  v_uv.y = top_or_bottom ? (float(segment_index) + 1.0) / u_fadeDistance : float(segment_index) / u_fadeDistance;
   
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }
