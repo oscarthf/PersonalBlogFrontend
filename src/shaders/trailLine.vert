@@ -115,9 +115,9 @@ void main() {
     return;
   }
 
-  // float fade = a_segment / 32.0;
-  // v_fade = 1.0 - fade;
-  v_fade = 1.0;
+  float fade = a_segment / 32.0;
+  v_fade = 1.0 - fade;
+  // v_fade = 1.0;
 
   vec2 center = top_or_bottom ? prev : curr;
   vec2 normal_dir = top_or_bottom ? prev_dir : curr_dir;

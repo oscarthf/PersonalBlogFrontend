@@ -15,7 +15,8 @@ import { createProgram, createFramebuffer, createInitialParticleData } from "../
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
 // const PARTICLE_COUNT = 1024;
-const PARTICLE_COUNT = 324;
+// const PARTICLE_COUNT = 324;
+const PARTICLE_COUNT = 49;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 const CANVAS_SIZE = 512;
