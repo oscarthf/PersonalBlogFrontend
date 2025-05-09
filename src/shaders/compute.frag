@@ -56,7 +56,8 @@ void main() {
 
   // === GRAVITY ===
 
-  vec2 gravity = vec2(0.0, -1.0);
+  vec2 gravity = vec2(0.0, -0.8);
+  // vec2 gravity = vec2(0.0, -0.2);
   vel += gravity;
 
   float maxSpeed = 20.0;
@@ -248,8 +249,8 @@ void main() {
   pos.x = mod(mod(pos.x, u_canvasSize) + u_canvasSize, u_canvasSize);
   // pos.y = mod(mod(pos.y, u_canvasSize) + u_canvasSize, u_canvasSize);
 
-  if (pos.y < 0.0) {
-    pos.y = float(u_canvasSize);
+  if (pos.y < -0.25 * u_canvasSize) {
+    pos.y = float(u_canvasSize) * 1.25;
     // set pos x to a random value between 0 and canvas size
     pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSize;
   }

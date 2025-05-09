@@ -28,7 +28,7 @@ export const createProgram = (gl: WebGLRenderingContext,
     return program;
 }
 
-export const createDataTexture = (gl: WebGLRenderingContext, size: number): WebGLTexture => {
+export const createInitialParticleData = (size: number): Float32Array => {
     const data = new Float32Array(size * size * 4);
     for (let i = 0; i < size * size; i++) {
         const x = Math.random();
@@ -40,13 +40,7 @@ export const createDataTexture = (gl: WebGLRenderingContext, size: number): WebG
         const vy = -Math.cos(random_angle) * 0.01;
         data.set([x, y, vx, vy], i * 4);
     }
-
-    const tex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size, size, 0, gl.RGBA, gl.FLOAT, data);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    return tex;
+    return data;
 }
 
 export const createFramebuffer = (gl: WebGLRenderingContext, texture: WebGLTexture): WebGLFramebuffer => {
