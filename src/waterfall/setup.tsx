@@ -22,16 +22,16 @@ export const loadSpriteImage = (gl: WebGLRenderingContext,
 
 export const createTrailIndicesAndCorners = (particleCount: number, 
                                              particleTextureSize: number,
-                                             trailHistoryLength: number) => {
+                                             trailHistoryLength: number,
+                                             bezierCurveResoultion: number) => {
 
-    const TRAIL_VERTS_PER_PARTICLE = 6 * (trailHistoryLength - 1); // 6 verts per particle for trail ribbons
+    const TRAIL_VERTS_PER_PARTICLE = 6 * (bezierCurveResoultion - 1) * (trailHistoryLength - 1); // 6 verts per particle for trail ribbons
     const trailIndices = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE * 2);
     const trailCorners = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
     const trailSegments = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
 
     const cornerPattern = [-1, 1, -1, -1, 1, 1]; // left/right
     const segmentPattern = [0, 0, 1, 1, 0, 1];   // curr (0) or prev (1)
-
 
     // -1,1 (2,3)           1,1 (5)
     //   |  \                |
@@ -46,12 +46,14 @@ export const createTrailIndicesAndCorners = (particleCount: number,
         const texX = i % particleTextureSizeInt;
         const texY = Math.floor(i / particleTextureSizeInt);
         for (let j = 0; j < (trailHistoryLength - 1); j++) {
-            for (let v = 0; v < 6; v++) {
-                const dst = i * TRAIL_VERTS_PER_PARTICLE + j * 6 + v;
-                trailIndices[dst * 2 + 0] = texX;
-                trailIndices[dst * 2 + 1] = texY;
-                trailCorners[dst] = cornerPattern[v];
-                trailSegments[dst] = segmentPattern[v] + j * 2;
+            for (let b = 0; b < (bezierCurveResoultion - 1); b++) {
+                for (let v = 0; v < 6; v++) {
+                    const dst = i * TRAIL_VERTS_PER_PARTICLE + j * 6 * (bezierCurveResoultion - 1) + b * 6 + v;
+                    trailIndices[dst * 2 + 0] = texX;
+                    trailIndices[dst * 2 + 1] = texY;
+                    trailCorners[dst] = cornerPattern[v];
+                    trailSegments[dst] = segmentPattern[v] + b * 2 + j * (bezierCurveResoultion - 1) * 2;
+                }
             }
         }
     }

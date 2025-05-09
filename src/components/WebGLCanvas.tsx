@@ -31,6 +31,8 @@ const TRAIL_HISTORY_LENGTH = 4;
 const TRAIL_HISTORY_STEP_SIZE = 4;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
+const BEZIER_CURVE_RESOLUTION = 4;
+
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
   distanceMap?: WebGLTexture;
@@ -182,15 +184,16 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), TRAIL_HISTORY_LENGTH - 1);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frame_number"), frame_number);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frame_number);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
 
-      // u_animation_offsets
+      // u_animationOffsets
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animation_offsets"), 0);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animationOffsets"), 0);
 
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
@@ -212,7 +215,7 @@ export default function WebGLCanvas({
       gl.clearColor(0.0, 0.0, 0.0, 0.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6);
+      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -243,7 +246,7 @@ export default function WebGLCanvas({
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_animation_offsets"), 0);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_animationOffsets"), 0);
 
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]);
@@ -255,7 +258,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frame_number"), frame_number);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frame_number);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
 
@@ -308,7 +311,8 @@ export default function WebGLCanvas({
         trailSegments
        } = createTrailIndicesAndCorners(PARTICLE_COUNT, 
                                         PARTICLE_TEXTURE_SIZE,
-                                        TRAIL_HISTORY_LENGTH);
+                                        TRAIL_HISTORY_LENGTH,
+                                        BEZIER_CURVE_RESOLUTION);
 
       const trailIndexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
