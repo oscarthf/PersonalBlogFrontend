@@ -30,7 +30,15 @@ export const createTrailIndicesAndCorners = (particleCount: number,
     const trailSegments = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
 
     const cornerPattern = [-1, 1, -1, -1, 1, 1]; // left/right
-    const segmentPattern = [0, 0, 1, 1, 0, 1];   // prev (0) or curr (1)
+    const segmentPattern = [0, 0, 1, 1, 0, 1];   // curr (0) or prev (1)
+
+
+    // -1,1 (2,3)           1,1 (5)
+    //   |  \                |
+    //   |       \           |
+    //   |            \      |
+    //   |                 \ |
+    // -1,0 (0) ----------- 1,0 (1,4)
 
     const particleTextureSizeInt = Math.floor(particleTextureSize);
 
