@@ -7,8 +7,19 @@ layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 
 uniform float u_maxDistance;
 uniform float u_halfWidth;
-uniform sampler2D u_prevData;
-uniform sampler2D u_currData;
+
+// uniform sampler2D u_prevData_2;
+// uniform sampler2D u_prevData_1;
+// uniform sampler2D u_prevData_0;
+// uniform sampler2D u_currData;
+
+uniform sampler2D u_data_0;
+uniform sampler2D u_data_1;
+uniform sampler2D u_data_2;
+uniform sampler2D u_data_3;
+uniform sampler2D u_data_4;
+
+
 uniform float u_size;
 
 out float v_visible;
@@ -16,10 +27,35 @@ out float v_fade;
 
 void main() {
   vec2 texCoord = (a_index + 0.5) / u_size;
-  vec2 prev = texture(u_prevData, texCoord).xy;
-  vec2 curr = texture(u_currData, texCoord).xy;
+
+  int segment_i = int(a_segment);
+  int segment_index = int(a_segment / 2.0);
+  float top_or_bottom = float(segment_i % 2);
+
+  vec2 prev = vec2(0.0);
+  vec2 curr = vec2(0.0);
+
+  if (segment_index == 0) {
+    curr = texture(u_data_0, texCoord).xy;
+    prev = texture(u_data_1, texCoord).xy;
+  } else if (segment_index == 1) {
+    curr = texture(u_data_1, texCoord).xy;
+    prev = texture(u_data_2, texCoord).xy;
+  } else if (segment_index == 2) {
+    curr = texture(u_data_2, texCoord).xy;
+    prev = texture(u_data_3, texCoord).xy;
+  } else if (segment_index == 3) {
+    curr = texture(u_data_3, texCoord).xy;
+    prev = texture(u_data_4, texCoord).xy;
+  }
+
+  // vec2 prev_2 = texture(u_prevData_2, texCoord).xy;
+  // vec2 prev_1 = texture(u_prevData_1, texCoord).xy;
+  // vec2 prev_0 = texture(u_prevData_0, texCoord).xy;
+  // vec2 curr = texture(u_currData, texCoord).xy;
 
   vec2 dir = curr - prev;
+
   float len2 = dot(dir, dir);
 
   float maxLen2 = u_maxDistance * u_maxDistance;
@@ -36,7 +72,7 @@ void main() {
   float fade = clamp(length(dir) / u_maxDistance, 0.0, 1.0);
   v_fade = 1.0 - fade;
 
-  vec2 center = mix(prev, curr, a_segment);
+  vec2 center = mix(prev, curr, top_or_bottom);
   vec2 normal = normalize(vec2(-dir.y, dir.x));
   vec2 offset = normal * a_corner * u_halfWidth;
 

@@ -11,7 +11,7 @@ import trailLineVS from "../shaders/trailLine.vert?raw";
 import trailLineFS from "../shaders/trailLine.frag?raw";
 import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
 import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
-import { createProgram, createFramebuffer, createDataTexture } from "../web_gl_util/general";
+import { createProgram, createFramebuffer, createInitialParticleData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
 // const PARTICLE_COUNT = 1024;
@@ -23,7 +23,8 @@ const INITIAL_ROCK_X = 0.4;
 const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
-const TRAIL_HISTORY_LENGTH = 4;
+
+const TRAIL_HISTORY_LENGTH = 5;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -176,15 +177,17 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.1);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), 0.04);// maybe PARTICLE_QUAD_SIZE * 0.5);
       
-      gl.activeTexture(gl.TEXTURE0);
-      // gl.bindTexture(gl.TEXTURE_2D, readTex); // previous
-      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]); // previous
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_prevData"), 0);
+      ///////////
 
-      gl.activeTexture(gl.TEXTURE1);
-      // gl.bindTexture(gl.TEXTURE_2D, writeTex); // current
-      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]); // current
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_currData"), 1);
+      // Just wrote onto currentWriteIndex
+      for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
+        const texIndex = (currentWriteIndex - i + TRAIL_HISTORY_LENGTH) % TRAIL_HISTORY_LENGTH;
+        gl.activeTexture(gl.TEXTURE0 + i);
+        gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
+        gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i);
+      }
+
+      ///////////
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
 
@@ -194,7 +197,7 @@ export default function WebGLCanvas({
       gl.clearColor(0.0, 0.0, 0.0, 0.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * 6);
+      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6);
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -225,7 +228,7 @@ export default function WebGLCanvas({
 
       gl.activeTexture(gl.TEXTURE0);
       // gl.bindTexture(gl.TEXTURE_2D, readTex);
-      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentWriteIndex]);
       gl.uniform1i(gl.getUniformLocation(renderProgram, "u_data"), 0);
       
       gl.activeTexture(gl.TEXTURE1);
@@ -279,7 +282,9 @@ export default function WebGLCanvas({
         trailIndices, 
         trailCorners,
         trailSegments
-       } = createTrailIndicesAndCorners(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
+       } = createTrailIndicesAndCorners(PARTICLE_COUNT, 
+                                        PARTICLE_TEXTURE_SIZE,
+                                        TRAIL_HISTORY_LENGTH);
 
       const trailIndexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, trailIndexBuffer);
@@ -413,30 +418,20 @@ export default function WebGLCanvas({
   
     function setupSimulationTextures() {
 
-      const texA = createDataTexture(gl, PARTICLE_TEXTURE_SIZE);
-      const fbA = createFramebuffer(gl, texA);
+      const particleData = createInitialParticleData(PARTICLE_TEXTURE_SIZE);
 
-      // const texB = gl.createTexture()!;
-      // gl.bindTexture(gl.TEXTURE_2D, texB);
-      // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
-      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      // const fbB = createFramebuffer(gl, texB);
-
-      // return { texA, texB, fbA, fbB };
-
-      const texList = [texA];
-      const fbList = [fbA];
+      const texList = [];
+      const fbList = [];
 
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
-        const texB = gl.createTexture()!;
-        gl.bindTexture(gl.TEXTURE_2D, texB);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+        const tex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, particleData);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        const fbB = createFramebuffer(gl, texB);
-        texList.push(texB);
-        fbList.push(fbB);
+        const fb = createFramebuffer(gl, tex);
+        texList.push(tex);
+        fbList.push(fb);
       }
 
       return {
@@ -549,28 +544,25 @@ export default function WebGLCanvas({
       spriteVAO
     } = setupParticleVertices(PARTICLE_QUAD_SIZE);
     let { 
-      // texA: readTex, 
-      // texB: writeTex, 
       texList: readWriteTexList,
-      // fbA: readFB, 
-      // fbB: writeFB 
       fbList: readWriteFBList
     } = setupSimulationTextures();
     const fullscreenVAO = setupFullscreenQuad();
 
     setupSpriteQuad();
 
-    function preProcessing() {
+    function renderPass() {
+
+      // Pre-render pass
 
       preProcessParticles();
       stepSimulation();
       drawTrailsToBuffer();
 
-    }
+      // Real render starts
 
-    function renderPass() {
-      
       clearScreen();
+
       drawRock();
       drawTrailsOnScreen();
       drawParticles();
@@ -587,15 +579,14 @@ export default function WebGLCanvas({
       currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
 
     }
-    function renderLoop() {
+    
+    async function renderLoop() {
 
       if (!spriteReady) {
         requestAnimationFrame(renderLoop);
         return;
       }
       
-      preProcessing();
-
       flipReadWriteParticleTextures();
       
       renderPass();
