@@ -9,6 +9,7 @@ uniform sampler2D u_animationOffsets;
 uniform float u_size;
 uniform float u_particle_radius; // 0.01
 uniform int u_frameNumber;
+uniform int u_numFrames;
 
 out vec2 v_uv;
 

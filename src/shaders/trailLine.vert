@@ -10,6 +10,8 @@ uniform float u_fadeDistance;
 uniform int u_bezierResolution;
 uniform float u_halfWidth;
 uniform int u_frameNumber;
+uniform int u_numFrames;
+uniform int u_trailHistoryStepSize;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -33,6 +35,8 @@ uniform float u_size;
 
 out float v_visible;
 out vec2 v_uv;
+out float v_numFrames;
+out float v_trailHistoryStepSize;
 
 vec2 bezier(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
   float u = 1.0 - t;
@@ -45,6 +49,10 @@ vec2 bezierDerivative(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
 }
 
 void main() {
+
+  v_numFrames = float(u_numFrames);
+  v_trailHistoryStepSize = float(u_trailHistoryStepSize);
+
   vec2 texCoord = (a_index + 0.5) / u_size;
 
   int segment_i = int(a_segment);
@@ -131,23 +139,12 @@ void main() {
     return;
   }
 
-  float lenRatio = sqrt(len2) / u_maxDistance;
-
-  // BEFORE BEZIER CURVE
-
-  // vec2 center = top_or_bottom ? prev : curr;
-  // vec2 normal_dir = top_or_bottom ? prev_dir : curr_dir;
-  // vec2 normal = normalize(vec2(-normal_dir.y, normal_dir.x));
-  // vec2 offset = normal * a_corner * u_halfWidth;
-
-  // WITH BEZIER CURVE
-
   vec2 normalized_curr_dir = normalize(curr_dir);
   vec2 normalized_prev_dir = normalize(prev_dir);
 
   vec2 p0 = curr;
-  vec2 p1 = curr - normalized_curr_dir * lenRatio * u_halfWidth;
-  vec2 p2 = prev + normalized_prev_dir * lenRatio * u_halfWidth;
+  vec2 p1 = curr - normalized_curr_dir * u_halfWidth;
+  vec2 p2 = prev + normalized_prev_dir * u_halfWidth;
   vec2 p3 = prev;
 
   float t = float(bezier_curve_index) / float(u_bezierResolution - 1);
@@ -161,7 +158,7 @@ void main() {
 
   vec2 pos = center + offset;
 
-  v_uv.x = (a_corner + 1.0) * 0.5;
+  v_uv.x = (((a_corner + 1.0) * 0.5) + float(u_frameNumber));// / float(u_numFrames);
   // v_uv.y = top_or_bottom ? (float(segment_index) + 1.0) / u_fadeDistance : float(segment_index) / u_fadeDistance;
   float pre_y = top_or_bottom ? (float(segment_index) + 1.0) : float(segment_index);
   pre_y = pre_y * float(u_bezierResolution - 1) + float(bezier_curve_index);

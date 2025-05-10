@@ -27,6 +27,9 @@ const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
 
+const NUM_PARTICLE_FRAMES = 8;
+const NUM_TRAIL_FRAMES = 8;
+
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 4;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
@@ -58,7 +61,7 @@ export default function WebGLCanvas({
 
     let lastTime = performance.now();
     let frames = 0;
-    let frame_number = 0;
+    let frameNumber = 0;
     let fps = 0;
 
     let currentReadIndex = 0;
@@ -186,8 +189,10 @@ export default function WebGLCanvas({
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), TRAIL_HISTORY_LENGTH - 1);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frame_number);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), (TRAIL_HISTORY_LENGTH - 1) * TRAIL_HISTORY_STEP_SIZE);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % NUM_TRAIL_FRAMES);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_numFrames"), NUM_TRAIL_FRAMES);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryStepSize"), TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
@@ -206,8 +211,6 @@ export default function WebGLCanvas({
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
         gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i + 1);
       }
-
-
 
       ///////////
 
@@ -261,7 +264,8 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frame_number);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % NUM_PARTICLE_FRAMES);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
 
@@ -290,9 +294,9 @@ export default function WebGLCanvas({
 
     function trackFPS() {
 
-      frame_number++;
-      if (frame_number >= MAX_FRAME_CYCLE_LENGTH) {
-        frame_number = 0;
+      frameNumber++;
+      if (frameNumber >= MAX_FRAME_CYCLE_LENGTH) {
+        frameNumber = 0;
       }
 
       frames++;
