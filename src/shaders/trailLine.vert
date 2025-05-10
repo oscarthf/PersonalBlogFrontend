@@ -145,7 +145,7 @@ void main() {
 
   float maxLen2 = u_maxDistance * u_maxDistance;
 
-  if (len2 > maxLen2 || len2 == 0.0) {
+  if (len2 > maxLen2 || len2 == 0.0 || (curr_dir.y > 0.0 && curr_dir.y > u_maxDistance * 0.5)) {
     v_animationLength = 0.0;
     gl_Position = vec4(2.0, 2.0, 0.0, 0.0);
     return;

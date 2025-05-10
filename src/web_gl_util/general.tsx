@@ -29,11 +29,12 @@ export const createProgram = (gl: WebGLRenderingContext,
 }
 
 export const createInitialParticleData = (size: number,
+                                          height_over_width: number,
                                           y_margin: number): Float32Array => {
     const data = new Float32Array(size * size * 4);
     for (let i = 0; i < size * size; i++) {
         const x = Math.random();
-        const y = Math.random() * (1 + 2 * y_margin) - y_margin;
+        const y = Math.random() * (height_over_width + 2 * y_margin) - y_margin;
         const random_angle = Math.random() * Math.PI / 8 - Math.PI / 16;
         const vx = Math.sin(random_angle) * 0.01;
         const vy = -Math.cos(random_angle) * 0.01;

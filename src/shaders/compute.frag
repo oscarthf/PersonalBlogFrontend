@@ -58,8 +58,8 @@ void main() {
 
   // === GRAVITY ===
 
-  // vec2 gravity = vec2(0.0, -0.8);
-  vec2 gravity = vec2(0.0, -0.2);
+  vec2 gravity = vec2(0.0, -0.8);
+  // vec2 gravity = vec2(0.0, -0.2);
   vel += gravity;
 
   float maxSpeed = 20.0;

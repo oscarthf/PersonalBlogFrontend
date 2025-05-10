@@ -14,28 +14,35 @@ import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 import { createProgram, createFramebuffer, createInitialParticleData, createAnimationOffsetsData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
-const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
 // const PARTICLE_COUNT = 1024;
 // const PARTICLE_COUNT = 324;
-const PARTICLE_COUNT = 49;
+const PARTICLE_COUNT = 81;
+// const PARTICLE_COUNT = 49;
 const PARTICLE_SPAWN_Y_MARGIN = 0.25;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 const CANVAS_SIZE_WIDTH = 512;
 const CANVAS_SIZE_HEIGHT = 720;
 const CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
+
 const INITIAL_ROCK_X = 0.4;
-const INITIAL_ROCK_Y = 0.4;
+const INITIAL_ROCK_Y = 0.4 * CANVAS_HEIGHT_OVER_WIDTH;
 const INITIAL_ROCK_W = 0.2;
-const INITIAL_ROCK_H = 0.2;
+const INITIAL_ROCK_H = 0.2 * CANVAS_HEIGHT_OVER_WIDTH;
 
 const NUM_PARTICLE_FRAMES = 8;
+
+const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
+const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
 const BEZIER_CURVE_RESOLUTION = 4;
+
+// const BACKGROUND_COLOR = [0.0, 0.0, 0.0, 1.0];
+const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -85,7 +92,8 @@ export default function WebGLCanvas({
     function getMousePos(evt: MouseEvent): { x: number; y: number } {
       const rect = canvas.getBoundingClientRect();
       const x = (evt.clientX - rect.left) / rect.width;
-      const y = 1 - (evt.clientY - rect.top) / rect.height;
+      const y_pre = 1 - (evt.clientY - rect.top) / rect.height;
+      const y = y_pre * CANVAS_HEIGHT_OVER_WIDTH;
       return { x, y };
     }
 
@@ -189,7 +197,7 @@ export default function WebGLCanvas({
 
       gl.viewport(0, 0, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT);
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.2);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
@@ -228,6 +236,12 @@ export default function WebGLCanvas({
 
       if (maskMap) {
         gl.useProgram(maskProgram);
+
+        
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+
         gl.bindVertexArray(fullscreenVAO);
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_2D, maskMap);
@@ -237,7 +251,14 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_w"), rock_w);
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_h"), rock_h);
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+        
+        gl.disable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+        
       }
       
     }
@@ -245,6 +266,10 @@ export default function WebGLCanvas({
     function drawParticles() {
       
       gl.useProgram(renderParticlesProgram);
+    
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
       gl.bindVertexArray(spriteVAO);
 
       gl.activeTexture(gl.TEXTURE0);
@@ -266,6 +291,10 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     }
 
@@ -452,6 +481,7 @@ export default function WebGLCanvas({
     function setupSimulationTextures() {
 
       const particleData = createInitialParticleData(PARTICLE_TEXTURE_SIZE,
+                                                     CANVAS_HEIGHT_OVER_WIDTH,
                                                      PARTICLE_SPAWN_Y_MARGIN);
 
       const texList = [];
@@ -524,7 +554,11 @@ export default function WebGLCanvas({
     function clearScreen() {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clearColor(0, 0, 0, 1);
+      // gl.clearColor(0, 0, 0, 1);
+      gl.clearColor(BACKGROUND_COLOR[0], 
+                    BACKGROUND_COLOR[1], 
+                    BACKGROUND_COLOR[2], 
+                    BACKGROUND_COLOR[3]);
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
