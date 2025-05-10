@@ -20,10 +20,10 @@ void main() {
   float frameNumber = floor(v_uv.x);
 
   float x = (v_uv.x - frameNumber) * 2.0 - 1.0; // x is between -1 and 1
-  float y = v_uv.y;// y is between 0 and 1
+  float original_y = v_uv.y;// y is between 0 and 1
 
   float y_offset = frameNumber / v_animationLength + v_animationOffsets.x;
-  y -= y_offset;
+  float y = original_y - y_offset;
 
   float tao = 3.14159 * 2.0;
 
@@ -33,6 +33,11 @@ void main() {
 
   float ripple_left = sin(y * tao + left_phase_offset) * ripple_magnitude - ripple_width; // left side of the ripple
   float ripple_right = sin(y * tao) * ripple_magnitude + ripple_width; // right side of the ripple
+
+  float diminishment = 1.0 - original_y;
+
+  ripple_left *= diminishment;
+  ripple_right *= diminishment;
 
   if (x < ripple_left || x > ripple_right) {
     v_fade = 0.0; // if outside the ripple, fade out

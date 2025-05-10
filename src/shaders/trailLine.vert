@@ -9,7 +9,6 @@ uniform float u_maxDistance;
 uniform int u_bezierResolution;
 uniform float u_halfWidth;
 uniform int u_frameNumber;
-uniform int u_trailHistoryStepSize;
 uniform int u_trailHistoryLength;
 
 uniform sampler2D u_data_0;
@@ -57,7 +56,7 @@ void main() {
   int segment_index_pre = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
   
   int bezierCurveLength = (u_bezierResolution - 1);
-  int animationLength = u_trailHistoryLength * u_trailHistoryStepSize * bezierCurveLength;
+  int animationLength = u_trailHistoryLength * bezierCurveLength;
   float animationLength_f = float(animationLength);
   v_animationLength = animationLength_f;
 
@@ -160,8 +159,7 @@ void main() {
   int frameNumber = u_frameNumber % animationLength;
 
   v_uv.x = (((a_corner + 1.0) * 0.5) + float(frameNumber));
-  float pre_y = top_or_bottom ? (float(segment_index) + 1.0) : float(segment_index);
-  pre_y = pre_y * float(bezierCurveLength) + float(bezier_curve_index);
+  float pre_y = float(segment_index * bezierCurveLength + bezier_curve_index);
   v_uv.y = pre_y / animationLength_f;
 
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
