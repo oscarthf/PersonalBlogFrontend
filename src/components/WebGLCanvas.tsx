@@ -70,7 +70,6 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
-    // const particleSpawnYMargin = 1.0;// 0.25;
     const particleTextureSize = Math.sqrt(particleCount);
 
     let lastFrameTime = 0;
@@ -106,8 +105,6 @@ export default function WebGLCanvas({
     let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    // canvas.width = canvasSizeWidth;
-    // canvas.height = canvasSizeHeight;
     canvas.width = windowWidth;
     canvas.height = windowHeight;
 
@@ -178,7 +175,6 @@ export default function WebGLCanvas({
     function stepSimulation() {
 
       gl.useProgram(computeProgram);
-      // gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
       gl.bindFramebuffer(gl.FRAMEBUFFER, readWriteFBList[currentWriteIndex]);
       gl.viewport(0, 0, particleTextureSize, particleTextureSize);
       gl.bindVertexArray(fullscreenVAO);
@@ -188,7 +184,6 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(computeProgram, "u_sideMask"), 4);
 
       gl.activeTexture(gl.TEXTURE0);
-      // gl.bindTexture(gl.TEXTURE_2D, readTex);
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(computeProgram, "u_data"), 0);
 
@@ -615,7 +610,6 @@ export default function WebGLCanvas({
     function clearScreen() {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      // gl.clearColor(0, 0, 0, 1);
       gl.clearColor(backgroundColor[0], 
                     backgroundColor[1], 
                     backgroundColor[2], 
@@ -656,7 +650,6 @@ export default function WebGLCanvas({
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
-    // spriteImage.src = "/particle.png";
     spriteImage.src = spriteImageSrc;
     let spriteReady = false;
 
