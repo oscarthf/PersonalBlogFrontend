@@ -7,11 +7,13 @@ const particleRadius = 30;
 const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
-
+  backgroundColor: number[];
+  trailLineColor: number[];
 }
 
 export default function SimWithDistanceField({
-
+  backgroundColor,
+  trailLineColor,
 }: SimWithDistanceFieldProps) {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -46,7 +48,6 @@ export default function SimWithDistanceField({
   //     };
   // }, []);
 
-
   useEffect(() => {
     if (canvasRef.current && !gl) {
       const context = canvasRef.current.getContext("webgl2") as WebGL2RenderingContext;
@@ -78,6 +79,8 @@ export default function SimWithDistanceField({
                   dirYMap={textures.dirY}
                   maskMap={maskTex}
                   mask_radius={maskRadius}
+                  backgroundColor={backgroundColor}
+                  trailLineColor={trailLineColor}
                   particle_radius={particleRadius}
                   repulse_particle_radius={repulseParticleRadius}
               />

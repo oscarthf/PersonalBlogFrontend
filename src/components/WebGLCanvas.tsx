@@ -45,6 +45,8 @@ interface WebGLCanvasProps {
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
   mask_radius: number;
+  backgroundColor: number[];
+  trailLineColor: number[];
   particle_radius: number;
   repulse_particle_radius: number;
 }
@@ -58,6 +60,8 @@ export default function WebGLCanvas({
   dirYMap,
   maskMap,
   mask_radius,
+  backgroundColor,
+  trailLineColor,
   particle_radius,
   repulse_particle_radius,
 }: WebGLCanvasProps) {
@@ -67,23 +71,20 @@ export default function WebGLCanvas({
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
 
-    // const BACKGROUND_COLOR = [0.0, 0.0, 0.0, 1.0];
-    const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
-
-    let CANVAS_SIZE_WIDTH = windowWidth;
-    let CANVAS_SIZE_HEIGHT = windowHeight;
+    let canvasSizeWidth = windowWidth;
+    let canvasSizeHeight = windowHeight;
 
     if (windowWidth > windowHeight) {
       const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
-      CANVAS_SIZE_WIDTH = MAX_WINDOW_DIMENSION;
-      CANVAS_SIZE_HEIGHT = windowHeight * resizeFactor;
+      canvasSizeWidth = MAX_WINDOW_DIMENSION;
+      canvasSizeHeight = windowHeight * resizeFactor;
     } else {
       const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
-      CANVAS_SIZE_WIDTH = windowWidth * resizeFactor;
-      CANVAS_SIZE_HEIGHT = MAX_WINDOW_DIMENSION;
+      canvasSizeWidth = windowWidth * resizeFactor;
+      canvasSizeHeight = MAX_WINDOW_DIMENSION;
     }
 
-    let CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
+    let CANVAS_HEIGHT_OVER_WIDTH = canvasSizeHeight / canvasSizeWidth;
 
     const INITIAL_ROCK_X = 0.4;
     const INITIAL_ROCK_Y = 0.4;
@@ -99,8 +100,8 @@ export default function WebGLCanvas({
     let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    // canvas.width = CANVAS_SIZE_WIDTH;
-    // canvas.height = CANVAS_SIZE_HEIGHT;
+    // canvas.width = canvasSizeWidth;
+    // canvas.height = canvasSizeHeight;
     canvas.width = windowWidth;
     canvas.height = windowHeight;
 
@@ -161,8 +162,8 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeWidth"), CANVAS_SIZE_WIDTH);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeHeight"), CANVAS_SIZE_HEIGHT);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeWidth"), canvasSizeWidth);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeHeight"), canvasSizeHeight);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -199,16 +200,16 @@ export default function WebGLCanvas({
         gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirYMap"), 3);
       }
 
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x * CANVAS_SIZE_WIDTH);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y * CANVAS_SIZE_WIDTH);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * CANVAS_SIZE_WIDTH);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x * canvasSizeWidth);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y * canvasSizeWidth);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * canvasSizeWidth);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * canvasSizeWidth);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeWidth"), CANVAS_SIZE_WIDTH);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), CANVAS_SIZE_HEIGHT);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeWidth"), canvasSizeWidth);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), canvasSizeHeight);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -220,11 +221,12 @@ export default function WebGLCanvas({
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
 
-      gl.viewport(0, 0, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT);
+      gl.viewport(0, 0, canvasSizeWidth, canvasSizeHeight);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
+      gl.uniform3f(gl.getUniformLocation(trailLineProgram, "u_trailLineColor"), trailLineColor[0], trailLineColor[1], trailLineColor[2]);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
@@ -417,7 +419,7 @@ export default function WebGLCanvas({
       // === Framebuffer for trails ===
       const trailTex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvasSizeWidth, canvasSizeHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -605,10 +607,10 @@ export default function WebGLCanvas({
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
       // gl.clearColor(0, 0, 0, 1);
-      gl.clearColor(BACKGROUND_COLOR[0], 
-                    BACKGROUND_COLOR[1], 
-                    BACKGROUND_COLOR[2], 
-                    BACKGROUND_COLOR[3]);
+      gl.clearColor(backgroundColor[0], 
+                    backgroundColor[1], 
+                    backgroundColor[2], 
+                    1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 

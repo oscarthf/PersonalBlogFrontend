@@ -12,6 +12,7 @@ uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
 uniform float u_height_over_width;
 uniform float u_bezier_remainder;
+uniform vec3 u_trailLineColor;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -36,6 +37,7 @@ uniform float u_size;
 out vec2 v_uv;
 out vec4 v_animationOffsets;
 out float v_animationLength;
+out vec3 v_trailLineColor;
 
 vec2 bezier(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
   float u = 1.0 - t;
@@ -48,6 +50,8 @@ vec2 bezierDerivative(float t, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
 }
 
 void main() {
+
+  v_trailLineColor = vec3(u_trailLineColor);
 
   vec2 texCoord = (a_index + 0.5) / u_size;
 
