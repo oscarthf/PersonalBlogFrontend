@@ -18,9 +18,10 @@ const MAX_WINDOW_DIMENSION = 640;
 
 // const PARTICLE_COUNT = 1024;
 // const PARTICLE_COUNT = 324;
-const PARTICLE_COUNT = 81;
-// const PARTICLE_COUNT = 49;
-const PARTICLE_SPAWN_Y_MARGIN = 0.25;
+// const PARTICLE_COUNT = 81;
+const PARTICLE_COUNT = 49;
+// const PARTICLE_SPAWN_Y_MARGIN = 0.25;
+const PARTICLE_SPAWN_Y_MARGIN = 1.0;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 
@@ -34,9 +35,6 @@ const TRAIL_HISTORY_STEP_SIZE = 8;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
 const BEZIER_CURVE_RESOLUTION = 4;
-
-// const BACKGROUND_COLOR = [0.0, 0.0, 0.0, 1.0];
-const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -65,6 +63,9 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    // const BACKGROUND_COLOR = [0.0, 0.0, 0.0, 1.0];
+    const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
+
     let CANVAS_SIZE_WIDTH = windowWidth;
     let CANVAS_SIZE_HEIGHT = windowHeight;
 
@@ -81,9 +82,9 @@ export default function WebGLCanvas({
     let CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
 
     const INITIAL_ROCK_X = 0.4;
-    const INITIAL_ROCK_Y = 0.4 * CANVAS_HEIGHT_OVER_WIDTH;
+    const INITIAL_ROCK_Y = 0.4;
     const INITIAL_ROCK_W = 0.2;
-    const INITIAL_ROCK_H = 0.2 * CANVAS_HEIGHT_OVER_WIDTH;
+    const INITIAL_ROCK_H = 0.2;
 
     let lastTime = performance.now();
     let frames = 0;

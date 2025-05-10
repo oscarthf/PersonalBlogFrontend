@@ -2,7 +2,7 @@ import SimWithDistanceField from "../components/SimWithDistanceField";
 
 function Home() {
     return (
-    <div>
+    <div id="container">
         <SimWithDistanceField />
         <h1>Welcome to My Blog</h1>
     </div>
