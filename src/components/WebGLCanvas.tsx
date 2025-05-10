@@ -16,13 +16,7 @@ import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, c
 
 const MAX_WINDOW_DIMENSION = 640;
 
-// const PARTICLE_COUNT = 1024;
-// const PARTICLE_COUNT = 324;
-// const PARTICLE_COUNT = 81;
-const PARTICLE_COUNT = 49;
-// const PARTICLE_SPAWN_Y_MARGIN = 0.25;
-const PARTICLE_SPAWN_Y_MARGIN = 1.0;
-const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
+const PARTICLE_SPAWN_Y_MARGIN = 1.0;// 0.25;
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 
 const NUM_PARTICLE_FRAMES = 8;
@@ -45,6 +39,8 @@ interface WebGLCanvasProps {
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
   mask_radius: number;
+  particleCount: number;
+  spriteImageSrc: string;
   backgroundColor: number[];
   trailLineColor: number[];
   particle_radius: number;
@@ -60,12 +56,16 @@ export default function WebGLCanvas({
   dirYMap,
   maskMap,
   mask_radius,
+  particleCount,
+  spriteImageSrc,
   backgroundColor,
   trailLineColor,
   particle_radius,
   repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
+
+    const particleTextureSize = Math.sqrt(particleCount);
 
     let lastFrameTime = 0;
     const targetFPS = 60;
@@ -153,7 +153,7 @@ export default function WebGLCanvas({
       
       gl.useProgram(sideMaskProgram);
       gl.bindFramebuffer(gl.FRAMEBUFFER, sideMaskFB);
-      gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
+      gl.viewport(0, 0, particleTextureSize, particleTextureSize);
       gl.bindVertexArray(fullscreenVAO);
 
       gl.activeTexture(gl.TEXTURE0);
@@ -161,7 +161,7 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeHeight"), canvasSizeHeight);
 
@@ -174,7 +174,7 @@ export default function WebGLCanvas({
       gl.useProgram(computeProgram);
       // gl.bindFramebuffer(gl.FRAMEBUFFER, writeFB);
       gl.bindFramebuffer(gl.FRAMEBUFFER, readWriteFBList[currentWriteIndex]);
-      gl.viewport(0, 0, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE);
+      gl.viewport(0, 0, particleTextureSize, particleTextureSize);
       gl.bindVertexArray(fullscreenVAO);
 
       gl.activeTexture(gl.TEXTURE4);
@@ -210,7 +210,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), canvasSizeHeight);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), particleTextureSize);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     }
@@ -263,7 +263,7 @@ export default function WebGLCanvas({
 
       ///////////
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_size"), particleTextureSize);
 
       gl.bindVertexArray(trailVAO);
       
@@ -275,7 +275,7 @@ export default function WebGLCanvas({
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
-      gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
+      gl.drawArrays(gl.TRIANGLES, 0, particleCount * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -336,13 +336,13 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, spriteTex);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_sprite"), 2);
 
-      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, particleCount);
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -395,8 +395,8 @@ export default function WebGLCanvas({
         trailIndices, 
         trailCorners,
         trailSegments
-       } = createTrailIndicesAndCorners(PARTICLE_COUNT, 
-                                        PARTICLE_TEXTURE_SIZE,
+       } = createTrailIndicesAndCorners(particleCount, 
+                                        particleTextureSize,
                                         TRAIL_HISTORY_LENGTH,
                                         BEZIER_CURVE_RESOLUTION);
 
@@ -445,7 +445,7 @@ export default function WebGLCanvas({
 
       const sideMaskTex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, sideMaskTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       
@@ -457,7 +457,7 @@ export default function WebGLCanvas({
 
     function setupParticleIndices() {
 
-      const indices = createParticleIndices(PARTICLE_COUNT, PARTICLE_TEXTURE_SIZE);
+      const indices = createParticleIndices(particleCount, particleTextureSize);
 
       const indexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
@@ -532,7 +532,7 @@ export default function WebGLCanvas({
   
     function setupSimulationTextures() {
 
-      const particleData = createInitialParticleData(PARTICLE_TEXTURE_SIZE,
+      const particleData = createInitialParticleData(particleTextureSize,
                                                      CANVAS_HEIGHT_OVER_WIDTH,
                                                      PARTICLE_SPAWN_Y_MARGIN);
 
@@ -542,7 +542,7 @@ export default function WebGLCanvas({
       for (let i = 0; i < REAL_TRAIL_HISTORY_LENGTH; i++) {
         const tex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, particleData);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, particleData);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         const fb = createFramebuffer(gl, tex);
@@ -550,10 +550,10 @@ export default function WebGLCanvas({
         fbList.push(fb);
       }
 
-      const offsetsData = createAnimationOffsetsData(PARTICLE_TEXTURE_SIZE);
+      const offsetsData = createAnimationOffsetsData(particleTextureSize);
       const offsetsTex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, offsetsTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, PARTICLE_TEXTURE_SIZE, PARTICLE_TEXTURE_SIZE, 0, gl.RGBA, gl.FLOAT, offsetsData);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, offsetsData);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       
@@ -647,7 +647,8 @@ export default function WebGLCanvas({
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
-    spriteImage.src = "/particle.png";
+    // spriteImage.src = "/particle.png";
+    spriteImage.src = spriteImageSrc;
     let spriteReady = false;
 
     spriteImage.onload = () => {

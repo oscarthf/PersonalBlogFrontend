@@ -7,11 +7,15 @@ const particleRadius = 30;
 const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
+  particleCount: number;
+  spriteImageSrc: string;
   backgroundColor: number[];
   trailLineColor: number[];
 }
 
 export default function SimWithDistanceField({
+  particleCount,
+  spriteImageSrc,
   backgroundColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
@@ -79,6 +83,8 @@ export default function SimWithDistanceField({
                   dirYMap={textures.dirY}
                   maskMap={maskTex}
                   mask_radius={maskRadius}
+                  particleCount={particleCount}
+                  spriteImageSrc={spriteImageSrc}
                   backgroundColor={backgroundColor}
                   trailLineColor={trailLineColor}
                   particle_radius={particleRadius}

@@ -40,6 +40,8 @@ export default function Blog() {
     return (
         <div id="container">
             <SimWithDistanceField 
+                particleCount={81}
+                spriteImageSrc="/particle.png"
                 backgroundColor={[0.0, 0.0, 0.0]} 
                 trailLineColor={[1.0, 1.0, 0.0]} // yellow
             />
