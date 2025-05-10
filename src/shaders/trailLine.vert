@@ -11,7 +11,7 @@ uniform float u_halfWidth;
 uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
 uniform float u_height_over_width;
-uniform int u_bezier_remainder;
+uniform float u_bezier_remainder;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -58,7 +58,7 @@ void main() {
   int segment_index_pre = int(a_segment) / 2;// 0, 1, 2, 3 (0 is current and bottom if particle is moving down)
   
   int bezierCurveLength = (u_bezierResolution - 1);
-  int animationLength = u_trailHistoryLength * bezierCurveLength;
+  int animationLength = (u_trailHistoryLength - 1) * bezierCurveLength;
   float animationLength_f = float(animationLength);
   v_animationLength = animationLength_f;
 
@@ -173,8 +173,15 @@ void main() {
   int frameNumber = u_frameNumber % animationLength;
 
   v_uv.x = (((a_corner + 1.0) * 0.5) + float(frameNumber));
-  float pre_y = float(segment_index * bezierCurveLength + bezier_curve_index);// + u_bezier_remainder);
+
+  // if (segment_index == 0) {
+  //   v_uv.y = 0.0;
+  // } else {
+      
+  float pre_y = ((float(segment_index - 1) + u_bezier_remainder) * float(bezierCurveLength) + float(bezier_curve_index));
   v_uv.y = pre_y / animationLength_f;
+
+  // }
 
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }

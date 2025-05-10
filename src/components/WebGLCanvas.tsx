@@ -32,7 +32,7 @@ const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
-const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
+const REAL_TRAIL_HISTORY_LENGTH = (TRAIL_HISTORY_LENGTH + 1) * TRAIL_HISTORY_STEP_SIZE;
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
@@ -221,7 +221,8 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (TRAIL_HISTORY_STEP_SIZE - currentWriteIndex % TRAIL_HISTORY_STEP_SIZE));
+      console.log("u_bezier_remainder", (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
@@ -235,16 +236,20 @@ export default function WebGLCanvas({
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
         // TODO: reduce step size at low FPS!!!
-        const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        let texIndex = currentWriteIndex;
 
-        // let texIndex = currentWriteIndex;
-        // if (i == TRAIL_HISTORY_LENGTH - 1) {
-        //   texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
-        // } else if (i != 0) {
-        //   const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
-        //   const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
-        //   texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
-        // }
+        if (0) {
+          texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        } else {
+          if (i == TRAIL_HISTORY_LENGTH - 1) {
+            texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+          } else if (i != 0) {
+            const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
+            const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
+            texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+          }
+        
+        }
 
         gl.activeTexture(gl.TEXTURE1 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
