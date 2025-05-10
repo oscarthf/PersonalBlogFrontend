@@ -14,6 +14,8 @@ import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 import { createProgram, createFramebuffer, createInitialParticleData, createAnimationOffsetsData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
+const MAX_WINDOW_DIMENSION = 640;
+
 // const PARTICLE_COUNT = 1024;
 // const PARTICLE_COUNT = 324;
 const PARTICLE_COUNT = 81;
@@ -21,14 +23,6 @@ const PARTICLE_COUNT = 81;
 const PARTICLE_SPAWN_Y_MARGIN = 0.25;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
-const CANVAS_SIZE_WIDTH = 512;
-const CANVAS_SIZE_HEIGHT = 720;
-const CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
-
-const INITIAL_ROCK_X = 0.4;
-const INITIAL_ROCK_Y = 0.4 * CANVAS_HEIGHT_OVER_WIDTH;
-const INITIAL_ROCK_W = 0.2;
-const INITIAL_ROCK_H = 0.2 * CANVAS_HEIGHT_OVER_WIDTH;
 
 const NUM_PARTICLE_FRAMES = 8;
 
@@ -47,6 +41,8 @@ const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
   distanceMap?: WebGLTexture;
+  windowWidth: number;
+  windowHeight: number;
   dirXMap?: WebGLTexture;
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
@@ -58,6 +54,8 @@ interface WebGLCanvasProps {
 export default function WebGLCanvas({
   gl,
   distanceMap,
+  windowWidth,
+  windowHeight,
   dirXMap,
   dirYMap,
   maskMap,
@@ -66,6 +64,26 @@ export default function WebGLCanvas({
   repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
+
+    let CANVAS_SIZE_WIDTH = windowWidth;
+    let CANVAS_SIZE_HEIGHT = windowHeight;
+
+    if (windowWidth > windowHeight) {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
+      CANVAS_SIZE_WIDTH = MAX_WINDOW_DIMENSION;
+      CANVAS_SIZE_HEIGHT = windowHeight * resizeFactor;
+    } else {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
+      CANVAS_SIZE_WIDTH = windowWidth * resizeFactor;
+      CANVAS_SIZE_HEIGHT = MAX_WINDOW_DIMENSION;
+    }
+
+    let CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
+
+    const INITIAL_ROCK_X = 0.4;
+    const INITIAL_ROCK_Y = 0.4 * CANVAS_HEIGHT_OVER_WIDTH;
+    const INITIAL_ROCK_W = 0.2;
+    const INITIAL_ROCK_H = 0.2 * CANVAS_HEIGHT_OVER_WIDTH;
 
     let lastTime = performance.now();
     let frames = 0;
@@ -76,8 +94,10 @@ export default function WebGLCanvas({
     let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.width = CANVAS_SIZE_WIDTH;
-    canvas.height = CANVAS_SIZE_HEIGHT;
+    // canvas.width = CANVAS_SIZE_WIDTH;
+    // canvas.height = CANVAS_SIZE_HEIGHT;
+    canvas.width = windowWidth;
+    canvas.height = windowHeight;
 
     let rock_x = INITIAL_ROCK_X;
     let rock_y = INITIAL_ROCK_Y;

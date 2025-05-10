@@ -7,7 +7,7 @@ const particleRadius = 30;
 const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
-  
+
 }
 
 export default function SimWithDistanceField({
@@ -22,6 +22,30 @@ export default function SimWithDistanceField({
     dirX?: WebGLTexture;
     dirY?: WebGLTexture;
   }>({});
+
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+
+  // const handleResizeOrLoad = () => {
+  //     console.log("Window resized or loaded");
+  //     // Your resize/load logic here (e.g., update canvas size)
+  // };
+
+  // useEffect(() => {
+  //     // Call once on mount (load)
+  //     handleResizeOrLoad();
+
+  //     // Add event listeners
+  //     window.addEventListener("resize", handleResizeOrLoad);
+  //     window.addEventListener("load", handleResizeOrLoad);
+
+  //     // Cleanup on unmount
+  //     return () => {
+  //         window.removeEventListener("resize", handleResizeOrLoad);
+  //         window.removeEventListener("load", handleResizeOrLoad);
+  //     };
+  // }, []);
+
 
   useEffect(() => {
     if (canvasRef.current && !gl) {
@@ -48,6 +72,8 @@ export default function SimWithDistanceField({
               <WebGLCanvas
                   gl={gl}
                   distanceMap={textures.distance}
+                  windowWidth={windowWidth}
+                  windowHeight={(windowHeight - windowWidth * 0.07)}
                   dirXMap={textures.dirX}
                   dirYMap={textures.dirY}
                   maskMap={maskTex}
