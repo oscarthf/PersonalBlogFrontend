@@ -25,7 +25,10 @@ export const createTrailIndicesAndCorners = (particleCount: number,
                                              trailHistoryLength: number,
                                              bezierCurveResoultion: number) => {
 
-    const TRAIL_VERTS_PER_PARTICLE = 6 * (bezierCurveResoultion - 1) * (trailHistoryLength - 1); // 6 verts per particle for trail ribbons
+    const bezierCurveLength = bezierCurveResoultion - 1;
+    const historyLength = trailHistoryLength - 1;
+
+    const TRAIL_VERTS_PER_PARTICLE = 6 * bezierCurveLength * historyLength; // 6 verts per particle for trail ribbons
     const trailIndices = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE * 2);
     const trailCorners = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
     const trailSegments = new Float32Array(particleCount * TRAIL_VERTS_PER_PARTICLE);
@@ -45,14 +48,14 @@ export const createTrailIndicesAndCorners = (particleCount: number,
     for (let i = 0; i < particleCount; i++) {
         const texX = i % particleTextureSizeInt;
         const texY = Math.floor(i / particleTextureSizeInt);
-        for (let j = 0; j < (trailHistoryLength - 1); j++) {
-            for (let b = 0; b < (bezierCurveResoultion - 1); b++) {
+        for (let j = 0; j < historyLength; j++) {
+            for (let b = 0; b < bezierCurveLength; b++) {
                 for (let v = 0; v < 6; v++) {
-                    const dst = i * TRAIL_VERTS_PER_PARTICLE + j * 6 * (bezierCurveResoultion - 1) + b * 6 + v;
+                    const dst = i * TRAIL_VERTS_PER_PARTICLE + j * 6 * bezierCurveLength + b * 6 + v;
                     trailIndices[dst * 2 + 0] = texX;
                     trailIndices[dst * 2 + 1] = texY;
                     trailCorners[dst] = cornerPattern[v];
-                    trailSegments[dst] = segmentPattern[v] + b * 2 + j * (bezierCurveResoultion - 1) * 2;
+                    trailSegments[dst] = segmentPattern[v] + j * 2 * bezierCurveLength + b * 2;
                 }
             }
         }

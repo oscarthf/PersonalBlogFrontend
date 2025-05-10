@@ -47,7 +47,9 @@ export const createAnimationOffsetsData = (size: number): Float32Array => {
     for (let i = 0; i < size * size; i++) {
         const x = Math.random();
         const y = Math.random();
-        data.set([x, y, 0, 0], i * 4);
+        const z = Math.random();
+        const w = Math.random();
+        data.set([x, y, z, w], i * 4);
     }
     return data;
 }

@@ -14,7 +14,7 @@ import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
 import { createProgram, createFramebuffer, createInitialParticleData, createAnimationOffsetsData } from "../web_gl_util/general";
 import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, createParticleVertices } from "../waterfall/setup";
 
-const MAX_FRAME_CYCLE_LENGTH = 16;
+const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
 // const PARTICLE_COUNT = 1024;
 // const PARTICLE_COUNT = 324;
 const PARTICLE_COUNT = 49;
@@ -28,13 +28,12 @@ const INITIAL_ROCK_W = 0.2;
 const INITIAL_ROCK_H = 0.2;
 
 const NUM_PARTICLE_FRAMES = 8;
-const NUM_TRAIL_FRAMES = 8;
 
 const TRAIL_HISTORY_LENGTH = 8;
-const TRAIL_HISTORY_STEP_SIZE = 4;
+const TRAIL_HISTORY_STEP_SIZE = 8;
 const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
 
-const BEZIER_CURVE_RESOLUTION = 8;
+const BEZIER_CURVE_RESOLUTION = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
@@ -183,16 +182,15 @@ export default function WebGLCanvas({
       gl.useProgram(trailLineProgram);
       
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      // gl.enable(gl.BLEND);
+      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
       gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.5);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_fadeDistance"), (TRAIL_HISTORY_LENGTH - 1) * TRAIL_HISTORY_STEP_SIZE);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % NUM_TRAIL_FRAMES);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_numFrames"), NUM_TRAIL_FRAMES);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.2);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryStepSize"), TRAIL_HISTORY_STEP_SIZE);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
@@ -223,8 +221,8 @@ export default function WebGLCanvas({
 
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
 
-      gl.disable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      // gl.disable(gl.BLEND);
+      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     }
 
@@ -264,7 +262,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
-      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % NUM_PARTICLE_FRAMES);
+      gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, PARTICLE_COUNT);
