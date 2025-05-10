@@ -43,12 +43,12 @@ void main() {
     discard;
   }
 
-  if (v_fade < 0.5) {
-    red = 1.0;
-    green = 0.0;
-    blue = 0.0;
-    v_fade = 1.0;
-  }
+  // if (v_fade < 0.5) {
+  //   red = 1.0;
+  //   green = 0.0;
+  //   blue = 0.0;
+  //   v_fade = 1.0;
+  // }
 
   outColor = vec4(red, green, blue, v_fade);
 }

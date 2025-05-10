@@ -63,6 +63,10 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    let lastFrameTime = 0;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
+
     // const BACKGROUND_COLOR = [0.0, 0.0, 0.0, 1.0];
     const BACKGROUND_COLOR = [0.2, 0.4, 0.6, 1.0];
 
@@ -221,7 +225,6 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
-      console.log("u_bezier_remainder", (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
@@ -703,10 +706,6 @@ export default function WebGLCanvas({
       currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
 
     }
-
-    let lastFrameTime = 0;
-    const targetFPS = 10;
-    const frameDuration = 1000 / targetFPS;
 
     function renderLoopInner() {
 
