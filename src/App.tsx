@@ -8,7 +8,7 @@ export default function App() {
     return (
         <Router>
             <Navbar />
-            <div className="container">
+            <div id="page_container">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/blog" element={<Blog />} />

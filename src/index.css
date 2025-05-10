@@ -17,10 +17,22 @@ nav a {
     text-decoration: none;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
+#sim_container {
+    /* position: absolute; */
+    /* z-index: 0; */
+    top: 0;
+    left: 0;
+    height: 0;
+    width: 0;
+    /* width: 100vw;
+    height: 100vh; */
+}
+
+#page_container {
+    position: absolute;
+    /* max-width: 800px; */
+    /* margin: 0 auto; */
+    /* padding: 2rem; */
 }
 
 .card {
