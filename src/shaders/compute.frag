@@ -11,6 +11,8 @@ uniform sampler2D u_dirXMap;
 uniform sampler2D u_dirYMap;
 uniform sampler2D u_sideMask;
 
+uniform float u_gravity;
+uniform float u_repulse_force;
 uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
 uniform float u_canvasSizeHeight;
@@ -43,6 +45,8 @@ vec4 getSideMask(ivec2 index) {
 
 void main() {
 
+  float repulse_force = u_repulse_force;
+
   // Compute own index from UV
   
   ivec2 fragIndex = ivec2(floor(v_uv * u_particleTextureSize));
@@ -58,8 +62,7 @@ void main() {
 
   // === GRAVITY ===
 
-  vec2 gravity = vec2(0.0, -0.8);
-  // vec2 gravity = vec2(0.0, -0.2);
+  vec2 gravity = vec2(0.0, -u_gravity);
   vel += gravity;
 
   float maxSpeed = 20.0;
@@ -108,7 +111,6 @@ void main() {
 
   // === COLLISION AVOIDANCE ===
 
-  float repulse_force = 0.5;
   float particle_radius = u_particle_radius;
   float repulse_particle_radius = u_repulse_particle_radius;
   float particle_radius_squared = particle_radius * particle_radius;
@@ -206,36 +208,37 @@ void main() {
         }
       }
 
-      // // check if is on the top side of the screen
-      // if (other_isOnTopSide && isOnBottomSide) {
-      //   // check for wrapped particles on the bottom side of the screen
-      //   vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSizeWidth);
-      //   vec2 delta = pos - wrapped_pos;
-      //   if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
-      //     // Check if the distance is less than the repulse_particle_radius
-      //     float d_squared = lengthSquared(delta);
-      //     if (d_squared > 0.0 && d_squared < repulse_particle_radius_squared) {
-      //       float d = sqrt(d_squared);
-      //       repulse += normalize(delta) * (repulse_particle_radius - d) * repulse_force;
-      //     }
-      //   }
-      // }
-      
-      // // check if is on the bottom side of the screen
-      // if (other_isOnBottomSide && isOnTopSide) {
-      //   // check for wrapped particles on the top side of the screen
-      //   vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSizeWidth);
-      //   vec2 delta = pos - wrapped_pos;
-      //   if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
-      //     // Check if the distance is less than the repulse_particle_radius
-      //     float d_squared = lengthSquared(delta);
-      //     if (d_squared > 0.0 && d_squared < repulse_particle_radius_squared) {
-      //       float d = sqrt(d_squared);
-      //       repulse += normalize(delta) * (repulse_particle_radius - d) * repulse_force;
-      //     }
-      //   }
-      // }
-
+      if (u_gravity == 0.0) {
+        // check if is on the top side of the screen
+        if (other_isOnTopSide && isOnBottomSide) {
+          // check for wrapped particles on the bottom side of the screen
+          vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSizeWidth);
+          vec2 delta = pos - wrapped_pos;
+          if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
+            // Check if the distance is less than the repulse_particle_radius
+            float d_squared = lengthSquared(delta);
+            if (d_squared > 0.0 && d_squared < repulse_particle_radius_squared) {
+              float d = sqrt(d_squared);
+              repulse += normalize(delta) * (repulse_particle_radius - d) * repulse_force;
+            }
+          }
+        }
+        
+        // check if is on the bottom side of the screen
+        if (other_isOnBottomSide && isOnTopSide) {
+          // check for wrapped particles on the top side of the screen
+          vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSizeWidth);
+          vec2 delta = pos - wrapped_pos;
+          if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
+            // Check if the distance is less than the repulse_particle_radius
+            float d_squared = lengthSquared(delta);
+            if (d_squared > 0.0 && d_squared < repulse_particle_radius_squared) {
+              float d = sqrt(d_squared);
+              repulse += normalize(delta) * (repulse_particle_radius - d) * repulse_force;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -252,13 +255,16 @@ void main() {
   // === BOUNDING BOX ===
   
   pos.x = mod(mod(pos.x, u_canvasSizeWidth) + u_canvasSizeWidth, u_canvasSizeWidth);
-  // pos.y = mod(mod(pos.y, u_canvasSizeHeight) + u_canvasSizeHeight, u_canvasSizeHeight);
 
-  if (pos.y < -u_spawnYMargin * u_canvasSizeHeight) {
-    pos.y = float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin);
-    // set pos x to a random value between 0 and canvas size
-    // TODO: Use a different seed for this
-    pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
+  if (u_gravity == 0.0) {
+    pos.y = mod(mod(pos.y, u_canvasSizeHeight) + u_canvasSizeHeight, u_canvasSizeHeight);
+  } else {
+    if (pos.y < -u_spawnYMargin * u_canvasSizeHeight) {
+      pos.y = float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin);
+      // set pos x to a random value between 0 and canvas size
+      // TODO: Use a different seed for this
+      pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
+    }
   }
 
   // === SCALE BACK TO 0 - 1

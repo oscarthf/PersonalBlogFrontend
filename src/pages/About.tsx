@@ -4,6 +4,9 @@ export default function About() {
     return (
         <div id="container">
             <SimWithDistanceField 
+                particleSpawnYMargin={0.0}
+                repulse_force={-0.5}
+                gravity={0.0}
                 particleCount={81}
                 spriteImageSrc="/particle.png"
                 backgroundColor={[0.0, 0.0, 0.0]} 

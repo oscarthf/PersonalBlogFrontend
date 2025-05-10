@@ -7,6 +7,9 @@ const particleRadius = 30;
 const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
+  particleSpawnYMargin: number;
+  repulse_force: number;
+  gravity: number;
   particleCount: number;
   spriteImageSrc: string;
   backgroundColor: number[];
@@ -14,6 +17,9 @@ interface SimWithDistanceFieldProps {
 }
 
 export default function SimWithDistanceField({
+  particleSpawnYMargin,
+  repulse_force,
+  gravity,
   particleCount,
   spriteImageSrc,
   backgroundColor,
@@ -83,6 +89,9 @@ export default function SimWithDistanceField({
                   dirYMap={textures.dirY}
                   maskMap={maskTex}
                   mask_radius={maskRadius}
+                  particleSpawnYMargin={particleSpawnYMargin}
+                  repulse_force={repulse_force}
+                  gravity={gravity}
                   particleCount={particleCount}
                   spriteImageSrc={spriteImageSrc}
                   backgroundColor={backgroundColor}

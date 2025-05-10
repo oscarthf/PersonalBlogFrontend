@@ -16,13 +16,12 @@ import { loadSpriteImage, createTrailIndicesAndCorners, createParticleIndices, c
 
 const MAX_WINDOW_DIMENSION = 640;
 
-const PARTICLE_SPAWN_Y_MARGIN = 1.0;// 0.25;
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
 
 const NUM_PARTICLE_FRAMES = 8;
 
 const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
-const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
+const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 1.0;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
@@ -39,6 +38,9 @@ interface WebGLCanvasProps {
   dirYMap?: WebGLTexture;
   maskMap?: WebGLTexture;
   mask_radius: number;
+  particleSpawnYMargin: number;
+  repulse_force: number;
+  gravity: number;
   particleCount: number;
   spriteImageSrc: string;
   backgroundColor: number[];
@@ -56,6 +58,9 @@ export default function WebGLCanvas({
   dirYMap,
   maskMap,
   mask_radius,
+  particleSpawnYMargin,
+  repulse_force,
+  gravity,
   particleCount,
   spriteImageSrc,
   backgroundColor,
@@ -65,6 +70,7 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    // const particleSpawnYMargin = 1.0;// 0.25;
     const particleTextureSize = Math.sqrt(particleCount);
 
     let lastFrameTime = 0;
@@ -207,10 +213,13 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), particleSpawnYMargin);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), canvasSizeHeight);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), particleTextureSize);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_force"), repulse_force);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_gravity"), gravity);
+
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     }
@@ -534,7 +543,7 @@ export default function WebGLCanvas({
 
       const particleData = createInitialParticleData(particleTextureSize,
                                                      CANVAS_HEIGHT_OVER_WIDTH,
-                                                     PARTICLE_SPAWN_Y_MARGIN);
+                                                     particleSpawnYMargin);
 
       const texList = [];
       const fbList = [];

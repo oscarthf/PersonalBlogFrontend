@@ -40,6 +40,9 @@ export default function Blog() {
     return (
         <div id="container">
             <SimWithDistanceField 
+                particleSpawnYMargin={0.3}
+                repulse_force={0.1}
+                gravity={0.2}
                 particleCount={25}
                 spriteImageSrc="/particle.png"
                 backgroundColor={[0.6, 0.8, 1.0]}
