@@ -40,10 +40,10 @@ export default function Blog() {
     return (
         <div id="container">
             <SimWithDistanceField 
-                particleCount={81}
+                particleCount={25}
                 spriteImageSrc="/particle.png"
-                backgroundColor={[0.0, 0.0, 0.0]} 
-                trailLineColor={[1.0, 1.0, 0.0]} // yellow
+                backgroundColor={[0.6, 0.8, 1.0]}
+                trailLineColor={[1.0, 1.0, 1.0]} 
             />
             <h1 className="page-title">Blog Posts</h1>
         
