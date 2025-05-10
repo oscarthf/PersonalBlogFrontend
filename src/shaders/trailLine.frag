@@ -10,7 +10,7 @@ void main() {
   float red = 0.333;
   float green = 0.667;
   float blue = 1.0;
-  float v_fade = 1.0;// - v_uv.y;
+  float v_fade = 1.0 - v_uv.y;
 
   if (v_animationLength < 0.5) {
     discard;
@@ -34,17 +34,20 @@ void main() {
   float ripple_left = sin(y * tao + left_phase_offset) * ripple_magnitude - ripple_width; // left side of the ripple
   float ripple_right = sin(y * tao) * ripple_magnitude + ripple_width; // right side of the ripple
 
-  float diminishment = 1.0 - original_y;
+  float diminishment = (1.0 - original_y);
 
   ripple_left *= diminishment;
   ripple_right *= diminishment;
 
   if (x < ripple_left || x > ripple_right) {
-    v_fade = 0.0; // if outside the ripple, fade out
+    discard;
   }
 
   if (v_fade < 0.5) {
-    discard;
+    red = 1.0;
+    green = 0.0;
+    blue = 0.0;
+    v_fade = 1.0;
   }
 
   outColor = vec4(red, green, blue, v_fade);

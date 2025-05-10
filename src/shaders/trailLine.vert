@@ -11,6 +11,7 @@ uniform float u_halfWidth;
 uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
 uniform float u_height_over_width;
+uniform int u_bezier_remainder;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -172,7 +173,7 @@ void main() {
   int frameNumber = u_frameNumber % animationLength;
 
   v_uv.x = (((a_corner + 1.0) * 0.5) + float(frameNumber));
-  float pre_y = float(segment_index * bezierCurveLength + bezier_curve_index);
+  float pre_y = float(segment_index * bezierCurveLength + bezier_curve_index);// + u_bezier_remainder);
   v_uv.y = pre_y / animationLength_f;
 
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);

@@ -32,7 +32,7 @@ const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
-const REAL_TRAIL_HISTORY_LENGTH = TRAIL_HISTORY_LENGTH * TRAIL_HISTORY_STEP_SIZE;
+const REAL_TRAIL_HISTORY_LENGTH = (TRAIL_HISTORY_LENGTH + 1) * TRAIL_HISTORY_STEP_SIZE;
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
@@ -221,6 +221,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (TRAIL_HISTORY_STEP_SIZE - currentWriteIndex % TRAIL_HISTORY_STEP_SIZE));
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
@@ -234,13 +235,17 @@ export default function WebGLCanvas({
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
         // TODO: reduce step size at low FPS!!!
-        // const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
-        let texIndex = currentWriteIndex;
-        if (i != 0) {
-          const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
-          const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
-          texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
-        }
+        const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+
+        // let texIndex = currentWriteIndex;
+        // if (i == TRAIL_HISTORY_LENGTH - 1) {
+        //   texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        // } else if (i != 0) {
+        //   const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
+        //   const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
+        //   texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        // }
+
         gl.activeTexture(gl.TEXTURE1 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
         gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i + 1);
@@ -256,8 +261,14 @@ export default function WebGLCanvas({
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.disable(gl.CULL_FACE);
+
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
       gl.enable(gl.CULL_FACE);
 
@@ -687,14 +698,13 @@ export default function WebGLCanvas({
       currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
 
     }
-    
-    async function renderLoop() {
 
-      if (!spriteReady) {
-        requestAnimationFrame(renderLoop);
-        return;
-      }
-      
+    let lastFrameTime = 0;
+    const targetFPS = 10;
+    const frameDuration = 1000 / targetFPS;
+
+    function renderLoopInner() {
+
       flipReadWriteParticleTextures();
       
       renderPass();
@@ -703,6 +713,20 @@ export default function WebGLCanvas({
       if (err !== gl.NO_ERROR) console.warn("GL Error:", err);
 
       trackFPS();
+    }
+    
+    function renderLoop(now: number) {
+
+      if (!spriteReady) {
+        requestAnimationFrame(renderLoop);
+        return;
+      }
+      
+      if (now - lastFrameTime >= frameDuration) {
+        lastFrameTime = now;
+        // Your render logic here
+        renderLoopInner();
+      }
 
       requestAnimationFrame(renderLoop);
 
