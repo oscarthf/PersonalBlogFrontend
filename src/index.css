@@ -8,19 +8,72 @@ body {
 nav {
     background-color: #1e3a8a;
     color: white;
+    height: 7vw;
+    overflow: hidden;
+}
+
+
+
+.nav_button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #111827;
+    color: #ffffff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin-right: 0.5rem;
+}
+
+.nav_button:hover {
+    background-color: #1f2937;
+    transform: translateY(-2px);
+}
+
+.nav_button:active {
+    transform: translateY(0);
+    background-color: #0f172a;
+}
+
+.nav_button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.nav_button.active {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+
+
+
+
+#nav_container {
     padding: 1rem;
 }
 
-nav a {
-    color: white;
-    margin-right: 1rem;
-    text-decoration: none;
+#sim_container {
+    /* position: absolute; */
+    /* z-index: 0; */
+    top: 0;
+    left: 0;
+    height: 0;
+    width: 0;
+    /* width: 100vw;
+    height: 100vh; */
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
+#page_container {
+    position: absolute;
+    /* max-width: 800px; */
+    /* margin: 0 auto; */
+    /* padding: 2rem; */
 }
 
 .card {

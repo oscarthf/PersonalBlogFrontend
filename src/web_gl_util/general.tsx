@@ -14,8 +14,8 @@ export const createShader = (gl: WebGLRenderingContext,
 }
 
 export const createProgram = (gl: WebGLRenderingContext,
-                            vsSrc: string, 
-                            fsSrc: string): WebGLProgram => {
+                              vsSrc: string, 
+                              fsSrc: string): WebGLProgram => {
     const program = gl.createProgram()!;
     const vs = createShader(gl, gl.VERTEX_SHADER, vsSrc);
     const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSrc);
@@ -28,17 +28,29 @@ export const createProgram = (gl: WebGLRenderingContext,
     return program;
 }
 
-export const createInitialParticleData = (size: number): Float32Array => {
+export const createInitialParticleData = (size: number,
+                                          height_over_width: number,
+                                          y_margin: number): Float32Array => {
     const data = new Float32Array(size * size * 4);
     for (let i = 0; i < size * size; i++) {
         const x = Math.random();
-        const y = Math.random();
-        // const vx = (Math.random() - 0.5) * 0.01;
-        // const vy = (Math.random() - 0.5) * 0.01;
+        const y = Math.random() * (height_over_width + 2 * y_margin) - y_margin;
         const random_angle = Math.random() * Math.PI / 8 - Math.PI / 16;
         const vx = Math.sin(random_angle) * 0.01;
         const vy = -Math.cos(random_angle) * 0.01;
         data.set([x, y, vx, vy], i * 4);
+    }
+    return data;
+}
+
+export const createAnimationOffsetsData = (size: number): Float32Array => {
+    const data = new Float32Array(size * size * 4);
+    for (let i = 0; i < size * size; i++) {
+        const x = Math.random();
+        const y = Math.random();
+        const z = Math.random();
+        const w = Math.random();
+        data.set([x, y, z, w], i * 4);
     }
     return data;
 }

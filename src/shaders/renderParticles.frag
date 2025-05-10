@@ -8,9 +8,10 @@ uniform sampler2D u_sprite;
 
 void main() {
   vec4 color = texture(u_sprite, v_uv);
-
-  // // Discard transparent pixels (for soft edges)
-  // if (color.a < 0.1) discard;
-
-  outColor = color;
+  float v = color.r;
+  if (v > 0.5) {
+    outColor = vec4(0.0, 0.0, 0.0, 0.0);
+  } else {
+    outColor = vec4(0.3, 0.6, 0.9, 1.0);
+  }
 }
