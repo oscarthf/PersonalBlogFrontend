@@ -4,6 +4,9 @@ function Home() {
     return (
     <div id="container">
         <SimWithDistanceField 
+            repulseParticleRadius={30.0}
+            particleRadius={30.0}
+            maskRadius={30.0}
             particleSpawnYMargin={1.0}
             repulse_force={0.5}
             gravity={0.8}

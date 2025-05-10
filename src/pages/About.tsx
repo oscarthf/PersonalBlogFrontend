@@ -3,9 +3,12 @@ import SimWithDistanceField from "../components/SimWithDistanceField";
 export default function About() {
     return (
         <div id="container">
-            <SimWithDistanceField 
+            <SimWithDistanceField
+                repulseParticleRadius={100.0}
+                particleRadius={100.0}
+                maskRadius={100.0}
                 particleSpawnYMargin={0.0}
-                repulse_force={-0.5}
+                repulse_force={-0.05}
                 gravity={0.0}
                 particleCount={81}
                 spriteImageSrc="/particle.png"

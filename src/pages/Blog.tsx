@@ -40,6 +40,9 @@ export default function Blog() {
     return (
         <div id="container">
             <SimWithDistanceField 
+                repulseParticleRadius={100.0}
+                particleRadius={100.0}
+                maskRadius={100.0}
                 particleSpawnYMargin={0.3}
                 repulse_force={0.1}
                 gravity={0.2}

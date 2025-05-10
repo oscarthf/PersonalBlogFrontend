@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import ImageDistanceField from "./ImageDistanceField";
 import WebGLCanvas from "./WebGLCanvas";
 
-const repulseParticleRadius = 50;
-const particleRadius = 30;
-const maskRadius = 30;
+// const repulseParticleRadius = 50;
+// const particleRadius = 30;
+// const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
+  repulseParticleRadius: number;
+  particleRadius: number;
+  maskRadius: number;
   particleSpawnYMargin: number;
   repulse_force: number;
   gravity: number;
@@ -17,6 +20,9 @@ interface SimWithDistanceFieldProps {
 }
 
 export default function SimWithDistanceField({
+  repulseParticleRadius,
+  particleRadius,
+  maskRadius,
   particleSpawnYMargin,
   repulse_force,
   gravity,
