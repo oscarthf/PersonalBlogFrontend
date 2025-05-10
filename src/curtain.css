@@ -1,0 +1,32 @@
+.curtain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.curtain-initial {
+    transform: translateY(0%);
+}
+
+.curtain-enter {
+    animation: curtainDown 0.5s forwards;
+}
+
+.curtain-exit {
+    animation: curtainUp 0.5s forwards;
+}
+
+@keyframes curtainDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0%); }
+}
+
+@keyframes curtainUp {
+    from { transform: translateY(0%); }
+    to { transform: translateY(100%); }
+}
