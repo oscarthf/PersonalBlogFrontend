@@ -9,6 +9,7 @@ function Home() {
             maskRadius={30.0}
             particleSpawnYMargin={1.0}
             repulse_force={0.5}
+            friction={0.9}
             gravity={0.8}
             particleCount={49}
             spriteImageSrc="/particle.png"

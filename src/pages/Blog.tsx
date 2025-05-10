@@ -45,6 +45,7 @@ export default function Blog() {
                 maskRadius={100.0}
                 particleSpawnYMargin={0.3}
                 repulse_force={0.1}
+                friction={0.9}
                 gravity={0.2}
                 particleCount={25}
                 spriteImageSrc="/particle.png"

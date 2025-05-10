@@ -12,6 +12,7 @@ uniform sampler2D u_dirYMap;
 uniform sampler2D u_sideMask;
 
 uniform float u_gravity;
+uniform float u_friction;
 uniform float u_repulse_force;
 uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
@@ -246,7 +247,7 @@ void main() {
 
   // === DAMPING ===
 
-  vel *= 0.9;
+  vel *= u_friction;
 
   // === POSITION INTEGRATION ===
 

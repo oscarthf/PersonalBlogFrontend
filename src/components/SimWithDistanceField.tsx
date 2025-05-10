@@ -12,6 +12,7 @@ interface SimWithDistanceFieldProps {
   maskRadius: number;
   particleSpawnYMargin: number;
   repulse_force: number;
+  friction: number;
   gravity: number;
   particleCount: number;
   spriteImageSrc: string;
@@ -25,6 +26,7 @@ export default function SimWithDistanceField({
   maskRadius,
   particleSpawnYMargin,
   repulse_force,
+  friction,
   gravity,
   particleCount,
   spriteImageSrc,
@@ -97,6 +99,7 @@ export default function SimWithDistanceField({
                   mask_radius={maskRadius}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
+                  friction={friction}
                   gravity={gravity}
                   particleCount={particleCount}
                   spriteImageSrc={spriteImageSrc}

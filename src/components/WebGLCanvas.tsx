@@ -21,7 +21,7 @@ const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (
 const NUM_PARTICLE_FRAMES = 8;
 
 const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
-const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 1.0;
+const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.3;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
@@ -40,6 +40,7 @@ interface WebGLCanvasProps {
   mask_radius: number;
   particleSpawnYMargin: number;
   repulse_force: number;
+  friction: number;
   gravity: number;
   particleCount: number;
   spriteImageSrc: string;
@@ -60,6 +61,7 @@ export default function WebGLCanvas({
   mask_radius,
   particleSpawnYMargin,
   repulse_force,
+  friction,
   gravity,
   particleCount,
   spriteImageSrc,
@@ -213,6 +215,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), canvasSizeHeight);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_force"), repulse_force);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_friction"), friction);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_gravity"), gravity);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
