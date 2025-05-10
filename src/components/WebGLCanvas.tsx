@@ -21,7 +21,9 @@ const PARTICLE_COUNT = 49;
 const PARTICLE_SPAWN_Y_MARGIN = 0.25;
 const PARTICLE_TEXTURE_SIZE = Math.sqrt(PARTICLE_COUNT);
 const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
-const CANVAS_SIZE = 512;
+const CANVAS_SIZE_WIDTH = 512;
+const CANVAS_SIZE_HEIGHT = 720;
+const CANVAS_HEIGHT_OVER_WIDTH = CANVAS_SIZE_HEIGHT / CANVAS_SIZE_WIDTH;
 const INITIAL_ROCK_X = 0.4;
 const INITIAL_ROCK_Y = 0.4;
 const INITIAL_ROCK_W = 0.2;
@@ -67,8 +69,8 @@ export default function WebGLCanvas({
     let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.width = CANVAS_SIZE;
-    canvas.height = CANVAS_SIZE;
+    canvas.width = CANVAS_SIZE_WIDTH;
+    canvas.height = CANVAS_SIZE_HEIGHT;
 
     let rock_x = INITIAL_ROCK_X;
     let rock_y = INITIAL_ROCK_Y;
@@ -126,7 +128,8 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(sideMaskProgram, "u_data"), 0);
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
-      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSize"), CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeWidth"), CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(sideMaskProgram, "u_canvasSizeHeight"), CANVAS_SIZE_HEIGHT);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -163,15 +166,16 @@ export default function WebGLCanvas({
         gl.uniform1i(gl.getUniformLocation(computeProgram, "u_dirYMap"), 3);
       }
 
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x * CANVAS_SIZE);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y * CANVAS_SIZE);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * CANVAS_SIZE);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_x"), rock_x * CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_y"), rock_y * CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_w"), rock_w * CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "rock_h"), rock_h * CANVAS_SIZE_WIDTH);
 
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particle_radius"), parseFloat(particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_spawnYMargin"), PARTICLE_SPAWN_Y_MARGIN);
-      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSize"), CANVAS_SIZE);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeWidth"), CANVAS_SIZE_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(computeProgram, "u_canvasSizeHeight"), CANVAS_SIZE_HEIGHT);
       gl.uniform1f(gl.getUniformLocation(computeProgram, "u_particleTextureSize"), PARTICLE_TEXTURE_SIZE);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -182,20 +186,18 @@ export default function WebGLCanvas({
       gl.useProgram(trailLineProgram);
       
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
-      // gl.enable(gl.BLEND);
-      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
-      gl.viewport(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      gl.viewport(0, 0, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT);
 
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), 0.2);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
       
       ///////////
 
-      // u_animationOffsets
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animationOffsets"), 0);
@@ -220,9 +222,6 @@ export default function WebGLCanvas({
 
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
 
-      // gl.disable(gl.BLEND);
-      // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
     }
 
     function drawRock() {
@@ -233,10 +232,11 @@ export default function WebGLCanvas({
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_2D, maskMap);
         gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_x"), rock_x);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_y"), rock_y);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_w"), rock_w);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "rock_h"), rock_h);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_x"), rock_x);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_y"), rock_y);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_w"), rock_w);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_h"), rock_h);
+        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
       
@@ -261,6 +261,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), PARTICLE_TEXTURE_SIZE);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       
@@ -337,7 +338,7 @@ export default function WebGLCanvas({
       // === Framebuffer for trails ===
       const trailTex = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, trailTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE, CANVAS_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

@@ -7,7 +7,8 @@ out vec4 outColor;
 uniform sampler2D u_data;
 uniform float u_repulse_particle_radius;
 uniform float u_particleTextureSize;
-uniform float u_canvasSize;
+uniform float u_canvasSizeWidth;
+uniform float u_canvasSizeHeight;
 
 void main() {
   
@@ -17,8 +18,8 @@ void main() {
   vec4 data = texture(u_data, fragUV);
   vec2 pos = data.xy;
 
-  pos.x *= u_canvasSize;
-  pos.y *= u_canvasSize;
+  pos.x *= u_canvasSizeWidth;
+  pos.y *= u_canvasSizeWidth;
 
   float cell_x = floor(pos.x / u_repulse_particle_radius);
   float cell_y = floor(pos.y / u_repulse_particle_radius);
@@ -26,13 +27,13 @@ void main() {
   float left_right_mark = 0.5;
   if (pos.x < u_repulse_particle_radius) {
     left_right_mark = 0.0;
-  } else if (pos.x > u_canvasSize - u_repulse_particle_radius) {
+  } else if (pos.x > u_canvasSizeWidth - u_repulse_particle_radius) {
     left_right_mark = 1.0;
   }
   float up_down_mark = 0.5;
   if (pos.y < u_repulse_particle_radius) {
     up_down_mark = 0.0;
-  } else if (pos.y > u_canvasSize - u_repulse_particle_radius) {
+  } else if (pos.y > u_canvasSizeHeight - u_repulse_particle_radius) {
     up_down_mark = 1.0;
   }
 

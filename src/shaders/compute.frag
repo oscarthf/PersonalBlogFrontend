@@ -12,7 +12,8 @@ uniform sampler2D u_dirYMap;
 uniform sampler2D u_sideMask;
 
 uniform float u_particleTextureSize;
-uniform float u_canvasSize;
+uniform float u_canvasSizeWidth;
+uniform float u_canvasSizeHeight;
 uniform float u_spawnYMargin;
 uniform float u_particle_radius;
 uniform float u_repulse_particle_radius;
@@ -52,8 +53,8 @@ void main() {
   
   // === SCALE TO IMAGE SIZE
 
-  pos.x *= u_canvasSize;
-  pos.y *= u_canvasSize;
+  pos.x *= u_canvasSizeWidth;
+  pos.y *= u_canvasSizeWidth;
 
   // === GRAVITY ===
 
@@ -126,8 +127,8 @@ void main() {
   bool isOnTopSide = up_down_mark < 0.25;
   bool isOnBottomSide = up_down_mark > 0.75;
 
-  int grid_width = (int(u_canvasSize) / int(repulse_particle_radius));
-  int grid_height = (int(u_canvasSize) / int(repulse_particle_radius));
+  int grid_width = (int(u_canvasSizeWidth) / int(repulse_particle_radius));
+  int grid_height = (int(u_canvasSizeHeight) / int(repulse_particle_radius));
 
   for (int y = 0; y < int(u_particleTextureSize); y++) {
     for (int x = 0; x < int(u_particleTextureSize); x++) {
@@ -138,8 +139,8 @@ void main() {
 
       vec2 other_pos = other.xy;
 
-      other_pos.x *= u_canvasSize;
-      other_pos.y *= u_canvasSize;
+      other_pos.x *= u_canvasSizeWidth;
+      other_pos.y *= u_canvasSizeWidth;
 
       vec4 otherSideMask = getSideMask(ivec2(x, y));
 
@@ -178,7 +179,7 @@ void main() {
       // check if is on the left side of the screen
       if (other_isOnLeftSide && isOnRightSide) {
         // check for wrapped particles on the right side of the screen
-        vec2 wrapped_pos = other_pos + vec2(u_canvasSize, 0.0);
+        vec2 wrapped_pos = other_pos + vec2(u_canvasSizeWidth, 0.0);
         vec2 delta = pos - wrapped_pos;
         if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
           // Check if the distance is less than the repulse_particle_radius
@@ -193,7 +194,7 @@ void main() {
       // check if is on the right side of the screen
       if (other_isOnRightSide && isOnLeftSide) {
         // check for wrapped particles on the left side of the screen
-        vec2 wrapped_pos = other_pos - vec2(u_canvasSize, 0.0);
+        vec2 wrapped_pos = other_pos - vec2(u_canvasSizeWidth, 0.0);
         vec2 delta = pos - wrapped_pos;
         if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
           // Check if the distance is less than the repulse_particle_radius
@@ -208,7 +209,7 @@ void main() {
       // // check if is on the top side of the screen
       // if (other_isOnTopSide && isOnBottomSide) {
       //   // check for wrapped particles on the bottom side of the screen
-      //   vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSize);
+      //   vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSizeWidth);
       //   vec2 delta = pos - wrapped_pos;
       //   if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
       //     // Check if the distance is less than the repulse_particle_radius
@@ -223,7 +224,7 @@ void main() {
       // // check if is on the bottom side of the screen
       // if (other_isOnBottomSide && isOnTopSide) {
       //   // check for wrapped particles on the top side of the screen
-      //   vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSize);
+      //   vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSizeWidth);
       //   vec2 delta = pos - wrapped_pos;
       //   if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
       //     // Check if the distance is less than the repulse_particle_radius
@@ -250,19 +251,20 @@ void main() {
 
   // === BOUNDING BOX ===
   
-  pos.x = mod(mod(pos.x, u_canvasSize) + u_canvasSize, u_canvasSize);
-  // pos.y = mod(mod(pos.y, u_canvasSize) + u_canvasSize, u_canvasSize);
+  pos.x = mod(mod(pos.x, u_canvasSizeWidth) + u_canvasSizeWidth, u_canvasSizeWidth);
+  // pos.y = mod(mod(pos.y, u_canvasSizeHeight) + u_canvasSizeHeight, u_canvasSizeHeight);
 
-  if (pos.y < -u_spawnYMargin * u_canvasSize) {
-    pos.y = float(u_canvasSize) * 1.25;
+  if (pos.y < -u_spawnYMargin * u_canvasSizeHeight) {
+    pos.y = float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin);
     // set pos x to a random value between 0 and canvas size
-    pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSize;
+    // TODO: Use a different seed for this
+    pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
   }
 
   // === SCALE BACK TO 0 - 1
 
-  pos.x /= u_canvasSize;
-  pos.y /= u_canvasSize;
+  pos.x /= u_canvasSizeWidth;
+  pos.y /= u_canvasSizeWidth;
 
   outColor = vec4(pos, vel);
   

@@ -8,6 +8,7 @@ uniform sampler2D u_data;
 uniform sampler2D u_animationOffsets;
 uniform float u_size;
 uniform float u_particle_radius; // 0.01
+uniform float u_height_over_width;
 uniform int u_frameNumber;
 uniform int u_numFrames;
 
@@ -29,7 +30,7 @@ void main() {
   vec2 vel = data.zw;
 
   // Compute angle from velocity
-  float angle = -atantwo(vel.y, vel.x);
+  float angle = -atantwo(vel.y, vel.x) + 3.14159265358979323846 / 2.0;
   float c = cos(angle);
   float s = sin(angle);
 
@@ -37,6 +38,9 @@ void main() {
   mat2 rotation = mat2(c, -s, s, c);
   vec2 rotatedQuad = rotation * a_quadPos;
 
+  // rescale pos and vel to 0 to 1 on the y axis
+  pos.y /= u_height_over_width;
+  
   // UV mapping
   v_uv = ((a_quadPos / u_particle_radius) + 1.0) * 0.5;
 

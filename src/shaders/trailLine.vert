@@ -10,6 +10,7 @@ uniform int u_bezierResolution;
 uniform float u_halfWidth;
 uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
+uniform float u_height_over_width;
 
 uniform sampler2D u_data_0;
 uniform sampler2D u_data_1;
@@ -122,12 +123,23 @@ void main() {
   vec2 curr = curr_full.xy;
   vec2 prev = prev_full.xy;
 
+  // rescale to 0 to 1 on y axis
+  curr.y /= u_height_over_width;
+  prev.y /= u_height_over_width;
+
   vec2 delta = curr - prev;
   // vec2 prev_dir = curr - prev;
   float delta_mag = length(delta);
 
-  vec2 curr_dir = curr_full.zw * delta_mag;
-  vec2 prev_dir = prev_full.zw * delta_mag;
+  vec2 curr_direction = curr_full.zw;
+  vec2 prev_direction = prev_full.zw;
+
+  // rescale to 0 to 1 on y axis
+  curr_direction.y /= u_height_over_width;
+  prev_direction.y /= u_height_over_width;
+
+  vec2 curr_dir = curr_direction * delta_mag;
+  vec2 prev_dir = prev_direction * delta_mag;
 
   float len2 = dot(curr_dir, curr_dir);
 
