@@ -213,7 +213,7 @@ export default function WebGLCanvas({
     function drawTrailsToBuffer() {
 
       gl.useProgram(trailLineProgram);
-      
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
 
       gl.viewport(0, 0, CANVAS_SIZE_WIDTH, CANVAS_SIZE_HEIGHT);
@@ -234,7 +234,13 @@ export default function WebGLCanvas({
       // Just wrote onto currentWriteIndex
       for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
         // TODO: reduce step size at low FPS!!!
-        const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        // const texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        let texIndex = currentWriteIndex;
+        if (i != 0) {
+          const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
+          const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
+          texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+        }
         gl.activeTexture(gl.TEXTURE1 + i);
         gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[texIndex]);
         gl.uniform1i(gl.getUniformLocation(trailLineProgram, `u_data_${i}`), i + 1);
@@ -249,7 +255,11 @@ export default function WebGLCanvas({
       gl.clearColor(0.0, 0.0, 0.0, 0.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
+      gl.disable(gl.CULL_FACE);
+      
       gl.drawArrays(gl.TRIANGLES, 0, PARTICLE_COUNT * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
+
+      gl.enable(gl.CULL_FACE);
 
     }
 
