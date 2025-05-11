@@ -158,6 +158,42 @@ export default function WebGLCanvas({
       dragging.current = false;
     }
 
+    function getTouchPos(evt: TouchEvent): { x: number; y: number } {
+      const rect = canvas.getBoundingClientRect();
+      const touch = evt.touches[0] || evt.changedTouches[0];
+      const x = (touch.clientX - rect.left) / rect.width;
+      const y_pre = 1 - (touch.clientY - rect.top) / rect.height;
+      const y = y_pre * CANVAS_HEIGHT_OVER_WIDTH;
+      return { x, y };
+    }
+
+    function onTouchStart(evt: TouchEvent) {
+      evt.preventDefault(); // Prevent scrolling
+      const { x, y } = getTouchPos(evt);
+      if (
+        x >= rock_x && x <= rock_x + rock_w &&
+        y >= rock_y && y <= rock_y + rock_h
+      ) {
+        dragging.current = true;
+        offset.x = x - rock_x;
+        offset.y = y - rock_y;
+      }
+    }
+
+    function onTouchMove(evt: TouchEvent) {
+      if (dragging.current) {
+        evt.preventDefault();
+        const { x, y } = getTouchPos(evt);
+        rock_x = x - offset.x;
+        rock_y = y - offset.y;
+      }
+    }
+
+    function onTouchEnd() {
+      dragging.current = false;
+    }
+
+
     // === WebGL Setup ===
 
     function preProcessParticles() {
@@ -759,11 +795,22 @@ export default function WebGLCanvas({
     canvas.addEventListener("mouseup", onMouseUp);
     canvas.addEventListener("mouseleave", onMouseUp);
     
+    canvas.addEventListener("touchstart", onTouchStart);
+    canvas.addEventListener("touchmove", onTouchMove);
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
+    
     // 👇 Cleanup when component unmounts or gl changes
     return () => {
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("mouseleave", onMouseUp);
+
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
     };
 
   }, [gl, distanceMap, dirXMap, dirYMap, maskMap]);
