@@ -135,8 +135,8 @@ void main() {
   vec2 delta = curr - prev;
   float delta_mag = length(delta);
 
-  vec2 curr_direction = curr_full.zw;
-  vec2 prev_direction = prev_full.zw;
+  vec2 curr_direction = normalize(curr_full.zw);
+  vec2 prev_direction = normalize(prev_full.zw);
 
   // rescale to 0 to 1 on y axis
   curr_direction.y /= u_height_over_width;
