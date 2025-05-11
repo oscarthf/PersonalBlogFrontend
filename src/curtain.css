@@ -1,0 +1,53 @@
+.curtain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.curtain-initial {
+    transform: translateY(0%);
+}
+
+/* Enter animations */
+.curtain-enter-down {
+    animation: curtainDown 0.5s forwards;
+}
+
+.curtain-enter-up {
+    animation: curtainUpEnter 0.5s forwards;
+}
+
+/* Exit animations */
+.curtain-exit-down {
+    animation: curtainDownExit 0.5s forwards;
+}
+
+.curtain-exit-up {
+    animation: curtainUp 0.5s forwards;
+}
+
+/* Keyframes */
+@keyframes curtainDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0%); }
+}
+
+@keyframes curtainDownExit {
+    from { transform: translateY(0%); }
+    to { transform: translateY(100%); }
+}
+
+@keyframes curtainUpEnter {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0%); }
+}
+
+@keyframes curtainUp {
+    from { transform: translateY(0%); }
+    to { transform: translateY(-100%); }
+}

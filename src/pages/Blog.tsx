@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import SimWithDistanceField from "../components/SimWithDistanceField";
 
 type Post = {
     id: string
@@ -37,7 +38,23 @@ export default function Blog() {
     }
 
     return (
-        <div className="container">
+        <div id="container">
+            <SimWithDistanceField 
+                repulseParticleRadius={100.0}
+                particleRadius={100.0}
+                maskRadius={100.0}
+                particleSpawnYMargin={0.5}
+                repulse_force={0.01}
+                friction={0.9}
+                gravity={-0.2}
+                particleCount={25}
+                rockImageSrc="/sun.png"
+                particleImageSrc="/cloud.png"
+                rockColor={[1.0, 1.0, 0.0]} // yellow
+                particleColor={[1.0, 1.0, 1.0]} // white
+                backgroundColor={[0.6, 0.8, 1.0]}
+                trailLineColor={[1.0, 1.0, 1.0]} 
+            />
             <h1 className="page-title">Blog Posts</h1>
         
             {posts.map(p => (
