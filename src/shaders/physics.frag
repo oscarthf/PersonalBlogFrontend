@@ -35,6 +35,7 @@ uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
 uniform float u_canvasSizeHeight;
 uniform float u_spawnYMargin;
+uniform float u_particle_radius;
 uniform float u_repulse_particle_radius;
 
 // up to 3 "rocks"
@@ -91,6 +92,8 @@ void main() {
   
   // === SCALE TO IMAGE SIZE
 
+  float particle_radius = u_particle_radius;
+
   pos.x *= u_canvasSizeWidth;
   pos.y *= u_canvasSizeWidth;
 
@@ -106,12 +109,12 @@ void main() {
 
   // === ROCK BOUNDING BOX ===
 
-  float dist = 0.0;
-  vec2 dir = vec2(0.0);
-
   // TODO: Add particle radius to collision detection
 
   for (int rock_i = 0; rock_i < 4; rock_i++) {
+
+    float dist = 0.0;
+    vec2 dir = vec2(0.0);
 
     float rock_x = 0.0;
     float rock_y = 0.0;
@@ -173,22 +176,41 @@ void main() {
 
       // === COLLISION WITH ROCK ===
 
-      dir.x *= rock_width;
-      dir.y *= rock_height;
-        
-      // === COLLISION WITH BLACK SHAPE ===
-
       vec2 normal = normalize(dir);
 
+      // if (dist < particle_radius * rock_width && length(normal) > 0.0) {
       if (dist < 0.0 && length(normal) > 0.0) {
-        // Reflect velocity to bounce
-        vel = reflect(vel, normal);
 
-        dist = length(dir);
+        // get a better sample point
+        scaled_rock_pos += normal * 0.05;
 
-        // Push particle just outside the surface to avoid sticking
-        float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
-        pos -= normal * pushOutDist;
+        if (rock_i == 0) {
+          dist = texture(u_rockDistanceField_0, scaled_rock_pos).r;
+          dir.x = texture(u_rockDirXMap_0, scaled_rock_pos).r;
+          dir.y = texture(u_rockDirYMap_0, scaled_rock_pos).r;
+        } else if (rock_i == 1) {
+          dist = texture(u_rockDistanceField_1, scaled_rock_pos).r;
+          dir.x = texture(u_rockDirXMap_1, scaled_rock_pos).r;
+          dir.y = texture(u_rockDirYMap_1, scaled_rock_pos).r;
+        } else if (rock_i == 2) {
+          dist = texture(u_rockDistanceField_2, scaled_rock_pos).r;
+          dir.x = texture(u_rockDirXMap_2, scaled_rock_pos).r;
+          dir.y = texture(u_rockDirYMap_2, scaled_rock_pos).r;
+        } else if (rock_i == 3) {
+          dist = texture(u_rockDistanceField_3, scaled_rock_pos).r;
+          dir.x = texture(u_rockDirXMap_3, scaled_rock_pos).r;
+          dir.y = texture(u_rockDirYMap_3, scaled_rock_pos).r;
+        }
+
+        normal = normalize(dir);
+
+        if (dist < 0.0 && length(normal) > 0.0) {
+
+          vel = reflect(vel, normal);
+          pos -= dir;
+
+        }
+
       }
 
     }

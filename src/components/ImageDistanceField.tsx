@@ -51,8 +51,8 @@ export default function ImageDistanceField({
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
-      const radius = image.width * 0.25;// should be a square image padded on all sides with 25% image width
-
+      // should be a square image padded on all sides with 25% image width
+      const radius = image.width / 4;
       const canvas = gl.canvas as HTMLCanvasElement;
       canvas.width = width;
       canvas.height = height;

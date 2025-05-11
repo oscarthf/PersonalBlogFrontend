@@ -41,7 +41,6 @@ export default function Blog() {
         <div id="container">
             <SimWithDistanceField 
                 repulseParticleRadius={100.0}
-                particleRadius={100.0}
                 particleSpawnYMargin={0.5}
                 repulse_force={0.01}
                 friction={0.9}

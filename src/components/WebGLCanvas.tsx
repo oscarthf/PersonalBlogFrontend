@@ -31,7 +31,7 @@ const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (
 const NUM_PARTICLE_FRAMES = 8;
 
 const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
-const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.9;
+const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;
@@ -62,7 +62,6 @@ interface WebGLCanvasProps {
   rockImageTextures: WebGLTexture[];
   particleColor: number[];
   trailLineColor: number[];
-  particle_radius: number;
   repulse_particle_radius: number;
 }
 
@@ -89,7 +88,6 @@ export default function WebGLCanvas({
   rockImageTextures,
   particleColor,
   trailLineColor,
-  particle_radius,
   repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
@@ -280,6 +278,7 @@ export default function WebGLCanvas({
 
       }
 
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);

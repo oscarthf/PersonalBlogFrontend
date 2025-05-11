@@ -5,7 +5,6 @@ export default function About() {
         <div id="container">
             <SimWithDistanceField
                 repulseParticleRadius={100.0}
-                particleRadius={100.0}
                 particleSpawnYMargin={0.0}
                 repulse_force={-0.001}
                 friction={1.0}

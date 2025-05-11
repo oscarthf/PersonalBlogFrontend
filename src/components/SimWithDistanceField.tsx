@@ -4,7 +4,6 @@ import WebGLCanvas from "./WebGLCanvas";
 
 interface SimWithDistanceFieldProps {
   repulseParticleRadius: number;
-  particleRadius: number;
   particleSpawnYMargin: number;
   repulse_force: number;
   friction: number;
@@ -24,7 +23,6 @@ interface SimWithDistanceFieldProps {
 
 export default function SimWithDistanceField({
   repulseParticleRadius,
-  particleRadius,
   particleSpawnYMargin,
   repulse_force,
   friction,
@@ -143,7 +141,6 @@ export default function SimWithDistanceField({
                   rockImageTextures={rockImageTextures}
                   particleColor={particleColor}
                   trailLineColor={trailLineColor}
-                  particle_radius={particleRadius}
                   repulse_particle_radius={repulseParticleRadius}
               />
           </>
