@@ -37,3 +37,10 @@ VITE_API_BASE_URL="/api"
 
 ```
 ```
+
+## Image sources:
+
+```
+moon.png: https://www.goodfreephotos.com/astrophotography/close-up-of-the-moon-detail.jpg.php
+opal.png: https://www.publicdomainpictures.net/en/view-image.php?image=627379&picture=opal-gemstone-stone-clipart-png
+```

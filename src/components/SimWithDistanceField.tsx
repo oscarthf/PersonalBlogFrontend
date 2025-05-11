@@ -2,52 +2,56 @@ import { useEffect, useRef, useState } from "react";
 import ImageDistanceField from "./ImageDistanceField";
 import WebGLCanvas from "./WebGLCanvas";
 
-// const repulseParticleRadius = 50;
-// const particleRadius = 30;
-// const maskRadius = 30;
-
 interface SimWithDistanceFieldProps {
   repulseParticleRadius: number;
-  particleRadius: number;
-  maskRadius: number;
   particleSpawnYMargin: number;
   repulse_force: number;
   friction: number;
   gravity: number;
   particleCount: number;
-  particleImageSrc: string;
-  rockImageSrc: string;
+  particleImageSource: string;
   backgroundColor: number[];
   rockColor: number[];
+  rockImageSources: string[];
+  rockXPositions: number[];
+  rockYPositions: number[];
+  rockWidths: number[];
+  rockHeights: number[];
   particleColor: number[];
   trailLineColor: number[];
 }
 
 export default function SimWithDistanceField({
   repulseParticleRadius,
-  particleRadius,
-  maskRadius,
   particleSpawnYMargin,
   repulse_force,
   friction,
   gravity,
   particleCount,
-  particleImageSrc,
-  rockImageSrc,
+  particleImageSource,
   backgroundColor,
   rockColor,
+  rockImageSources,
+  rockXPositions,
+  rockYPositions,
+  rockWidths,
+  rockHeights,
   particleColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [gl, setGL] = useState<WebGL2RenderingContext | null>(null);
-  const [maskTex, setMaskTex] = useState<WebGLTexture | null>(null);
-  const [textures, setTextures] = useState<{
-    distance?: WebGLTexture;
-    dirX?: WebGLTexture;
-    dirY?: WebGLTexture;
-  }>({});
+  const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
+  const [textures, setDistanceFieldTextures] = useState<{
+    distanceFields: WebGLTexture[];
+    dirX: WebGLTexture[];
+    dirY: WebGLTexture[];
+  }>({
+    distanceFields: [],
+    dirX: [],
+    dirY: [],
+  });
 
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
@@ -83,38 +87,60 @@ export default function SimWithDistanceField({
     <>
       <div id="sim_container">
         <canvas ref={canvasRef} width={512} height={512} style={{ display: "block" }} />
+        
         {gl && (
           <>
+            {[...Array(rockImageSources.length)].map((_, index) => (
               <ImageDistanceField
-                  gl={gl}
-                  src={rockImageSrc}
-                  radius={maskRadius}
-                  onResult={({ distance, dirX, dirY, mask }) => {
-                      setTextures({ distance, dirX, dirY });
-                      setMaskTex(mask);
-                  }}
+                key={index}
+                gl={gl}
+                src={rockImageSources[index]}
+                onResult={({ distance, dirX, dirY, mask }) => {
+                  setDistanceFieldTextures(prev => {
+                    const distanceFields = [...prev.distanceFields];
+                    const dirXArr = [...prev.dirX];
+                    const dirYArr = [...prev.dirY];
+
+                    distanceFields[index] = distance;
+                    dirXArr[index] = dirX;
+                    dirYArr[index] = dirY;
+
+                    return { distanceFields, dirX: dirXArr, dirY: dirYArr };
+                  });
+
+                  setRockImageTextures(prev => {
+                    const masks = [...prev];
+                    masks[index] = mask;
+                    return masks;
+                  });
+                }}
+
               />
+            ))}
+
               <WebGLCanvas
                   gl={gl}
-                  distanceMap={textures.distance}
+                  rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
                   windowHeight={(windowHeight - windowWidth * 0.07)}
-                  dirXMap={textures.dirX}
-                  dirYMap={textures.dirY}
-                  maskMap={maskTex}
-                  mask_radius={maskRadius}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
                   friction={friction}
                   gravity={gravity}
                   particleCount={particleCount}
-                  rockImageSrc={rockImageSrc}
-                  particleImageSrc={particleImageSrc}
+                  particleImageSource={particleImageSource}
                   backgroundColor={backgroundColor}
                   rockColor={rockColor}
+                  rockImageSources={rockImageSources}
+                  rockXPositions={rockXPositions}
+                  rockYPositions={rockYPositions}
+                  rockWidths={rockWidths}
+                  rockHeights={rockHeights}
+                  rockDirXMaps={textures.dirX}
+                  rockDirYMaps={textures.dirY}
+                  rockImageTextures={rockImageTextures}
                   particleColor={particleColor}
                   trailLineColor={trailLineColor}
-                  particle_radius={particleRadius}
                   repulse_particle_radius={repulseParticleRadius}
               />
           </>

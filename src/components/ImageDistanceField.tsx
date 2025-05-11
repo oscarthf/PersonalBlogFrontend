@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
-import distanceShaderSrc from "../shaders/distance.frag?raw";
+import distanceShaderSrc from "../shaders/createDistanceField.frag?raw";
 import fullscreenVS from "../shaders/fullscreen.vert?raw";
+import { createProgram } from "../web_gl_util/general";
 
 interface Props {
   gl: WebGL2RenderingContext;
   src: string;
-  radius: number;
   onResult?: (result: {
     distance: WebGLTexture;
     dirX: WebGLTexture;
@@ -17,9 +17,9 @@ interface Props {
 export default function ImageDistanceField({ 
   gl, 
   src, 
-  radius,
   onResult 
 }: Props) {
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -48,38 +48,18 @@ export default function ImageDistanceField({
       return tex;
     };
 
-    const createShader = (type: number, source: string): WebGLShader => {
-      const shader = gl.createShader(type)!;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error("Shader error: " + gl.getShaderInfoLog(shader));
-      }
-      return shader;
-    };
-
-    const createProgram = (vs: string, fs: string): WebGLProgram => {
-      const program = gl.createProgram()!;
-      gl.attachShader(program, createShader(gl.VERTEX_SHADER, vs));
-      gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fs));
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error("Link error: " + gl.getProgramInfoLog(program));
-      }
-      return program;
-    };
-
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
-
+      // should be a square image padded on all sides with 25% image width
+      const radius = image.width / 4;
       const canvas = gl.canvas as HTMLCanvasElement;
       canvas.width = width;
       canvas.height = height;
 
       // Upload source image to texture
-      const sourceTex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, sourceTex);
+      const imageTexture = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -106,13 +86,14 @@ export default function ImageDistanceField({
       }
 
       // Compile and run shader
-      const program = createProgram(fullscreenVS, distanceShaderSrc);
+      const program = createProgram(gl, fullscreenVS, distanceShaderSrc);
+
       gl.useProgram(program);
       gl.viewport(0, 0, width, height);
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, sourceTex);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
       gl.uniform1i(gl.getUniformLocation(program, "u_source"), 0);
       gl.uniform1i(gl.getUniformLocation(program, "u_radius"), radius);
       gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), width, height);
@@ -123,7 +104,7 @@ export default function ImageDistanceField({
         distance: texDist,
         dirX: texDirX,
         dirY: texDirY,
-        mask: sourceTex
+        mask: imageTexture
       });
     });
   }, [gl, src]);

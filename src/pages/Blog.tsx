@@ -41,16 +41,18 @@ export default function Blog() {
         <div id="container">
             <SimWithDistanceField 
                 repulseParticleRadius={100.0}
-                particleRadius={100.0}
-                maskRadius={100.0}
                 particleSpawnYMargin={0.5}
                 repulse_force={0.01}
                 friction={0.9}
                 gravity={-0.2}
                 particleCount={25}
-                rockImageSrc="/sun.png"
-                particleImageSrc="/cloud.png"
+                particleImageSource="/cloud.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
+                rockImageSources={["/sun.png"]}
+                rockXPositions={[0.4]}
+                rockYPositions={[0.4]}
+                rockWidths={[0.2]}
+                rockHeights={[0.2]}
                 particleColor={[1.0, 1.0, 1.0]} // white
                 backgroundColor={[0.6, 0.8, 1.0]}
                 trailLineColor={[1.0, 1.0, 1.0]} 
