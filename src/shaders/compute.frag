@@ -259,9 +259,16 @@ void main() {
 
   if (u_gravity == 0.0) {
     pos.y = mod(mod(pos.y, u_canvasSizeHeight) + u_canvasSizeHeight, u_canvasSizeHeight);
-  } else {
+  } else if (u_gravity > 0.0) {
     if (pos.y < -u_spawnYMargin * u_canvasSizeHeight) {
       pos.y = float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin);
+      // set pos x to a random value between 0 and canvas size
+      // TODO: Use a different seed for this
+      pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
+    }
+  } else {
+    if (pos.y > float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin)) {
+      pos.y = -u_spawnYMargin * u_canvasSizeHeight;
       // set pos x to a random value between 0 and canvas size
       // TODO: Use a different seed for this
       pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;

@@ -15,8 +15,11 @@ interface SimWithDistanceFieldProps {
   friction: number;
   gravity: number;
   particleCount: number;
-  spriteImageSrc: string;
+  particleImageSrc: string;
+  rockImageSrc: string;
   backgroundColor: number[];
+  rockColor: number[];
+  particleColor: number[];
   trailLineColor: number[];
 }
 
@@ -29,8 +32,11 @@ export default function SimWithDistanceField({
   friction,
   gravity,
   particleCount,
-  spriteImageSrc,
+  particleImageSrc,
+  rockImageSrc,
   backgroundColor,
+  rockColor,
+  particleColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
 
@@ -81,7 +87,7 @@ export default function SimWithDistanceField({
           <>
               <ImageDistanceField
                   gl={gl}
-                  src="/bw_mask.png"
+                  src={rockImageSrc}
                   radius={maskRadius}
                   onResult={({ distance, dirX, dirY, mask }) => {
                       setTextures({ distance, dirX, dirY });
@@ -102,8 +108,11 @@ export default function SimWithDistanceField({
                   friction={friction}
                   gravity={gravity}
                   particleCount={particleCount}
-                  spriteImageSrc={spriteImageSrc}
+                  rockImageSrc={rockImageSrc}
+                  particleImageSrc={particleImageSrc}
                   backgroundColor={backgroundColor}
+                  rockColor={rockColor}
+                  particleColor={particleColor}
                   trailLineColor={trailLineColor}
                   particle_radius={particleRadius}
                   repulse_particle_radius={repulseParticleRadius}

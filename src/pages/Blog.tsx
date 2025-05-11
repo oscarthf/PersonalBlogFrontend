@@ -48,7 +48,10 @@ export default function Blog() {
                 friction={0.9}
                 gravity={-0.2}
                 particleCount={25}
-                spriteImageSrc="/particle.png"
+                rockImageSrc="/sun.png"
+                particleImageSrc="/cloud.png"
+                rockColor={[1.0, 1.0, 0.0]} // yellow
+                particleColor={[1.0, 1.0, 1.0]} // white
                 backgroundColor={[0.6, 0.8, 1.0]}
                 trailLineColor={[1.0, 1.0, 1.0]} 
             />

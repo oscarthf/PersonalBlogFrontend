@@ -43,8 +43,11 @@ interface WebGLCanvasProps {
   friction: number;
   gravity: number;
   particleCount: number;
-  spriteImageSrc: string;
+  particleImageSrc: string;
+  rockImageSrc: string;
   backgroundColor: number[];
+  rockColor: number[];
+  particleColor: number[];
   trailLineColor: number[];
   particle_radius: number;
   repulse_particle_radius: number;
@@ -64,8 +67,11 @@ export default function WebGLCanvas({
   friction,
   gravity,
   particleCount,
-  spriteImageSrc,
+  particleImageSrc,
+  rockImageSrc,
   backgroundColor,
+  rockColor,
+  particleColor,
   trailLineColor,
   particle_radius,
   repulse_particle_radius,
@@ -309,6 +315,7 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_y"), rock_y);
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_w"), rock_w);
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_h"), rock_h);
+        gl.uniform3f(gl.getUniformLocation(maskProgram, "u_rockColor"), rockColor[0], rockColor[1], rockColor[2]);
         gl.uniform1f(gl.getUniformLocation(maskProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       
         gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -348,6 +355,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
+      gl.uniform3f(gl.getUniformLocation(renderParticlesProgram, "u_particleColor"), particleColor[0], particleColor[1], particleColor[2]);
       
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, particleCount);
 
@@ -653,7 +661,7 @@ export default function WebGLCanvas({
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
-    spriteImage.src = spriteImageSrc;
+    spriteImage.src = particleImageSrc;
     let spriteReady = false;
 
     spriteImage.onload = () => {
@@ -744,7 +752,7 @@ export default function WebGLCanvas({
 
     }
 
-    renderLoop();
+    renderLoop(performance.now());
     
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mousemove", onMouseMove);

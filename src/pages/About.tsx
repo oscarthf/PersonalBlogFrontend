@@ -12,8 +12,11 @@ export default function About() {
                 friction={1.0}
                 gravity={0.0}
                 particleCount={81}
-                spriteImageSrc="/particle.png"
+                rockImageSrc="/black_hole.png"
+                particleImageSrc="/star.png"
+                rockColor={[1.0, 1.0, 0.0]} // yellow
                 backgroundColor={[0.0, 0.0, 0.0]} 
+                particleColor={[1.0, 1.0, 0.0]} // yellow
                 trailLineColor={[1.0, 1.0, 0.0]} // yellow
             />
             <h1>About</h1>
