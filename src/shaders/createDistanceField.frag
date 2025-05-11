@@ -22,18 +22,34 @@ void main() {
     centerPixelWasBlack = false;
   }
 
-  for (int dy = -u_radius; dy <= u_radius; dy++) {
-    for (int dx = -u_radius; dx <= u_radius; dx++) {
+  float min_x_float = -float(u_radius) * texelSize.x + origin.x;
+  float min_y_float = -float(u_radius) * texelSize.y + origin.y;
+  float max_x_float = float(u_radius) * texelSize.x + origin.x;
+  float max_y_float = float(u_radius) * texelSize.y + origin.y;
+  if (min_x_float < 0.0) {
+    min_x_float = 0.0;
+  }
+  if (min_y_float < 0.0) {
+    min_y_float = 0.0;
+  }
+  if (max_x_float > 1.0) {
+    max_x_float = 1.0;
+  }
+  if (max_y_float > 1.0) {
+    max_y_float = 1.0;
+  }
+  int min_x = int(min_x_float / texelSize.x);
+  int min_y = int(min_y_float / texelSize.y);
+  int max_x = int(max_x_float / texelSize.x);
+  int max_y = int(max_y_float / texelSize.y);
+
+  for (int dy = min_y; dy < max_y; dy++) {
+    for (int dx = min_x; dx < max_x; dx++) {
       if (dx == 0 && dy == 0) {
-        continue; // Skip the center pixel
+        continue;// Skip the center pixel
       }
-      // Sample the texture at the offset position
       vec2 offset = vec2(float(dx), float(dy)) * texelSize;
       vec2 sampleUV = origin + offset;
-      if (any(lessThan(sampleUV, vec2(0.0))) || 
-          any(greaterThan(sampleUV, vec2(1.0)))) {
-        continue; // Skip pixels outside the texture bounds
-      }
       float currentDistance = length(vec2(float(dx), float(dy)));
       if (currentDistance > float(u_radius)) {
         continue; // Skip pixels outside the force radius
@@ -54,7 +70,7 @@ void main() {
   if (centerPixelWasBlack) {
     minDist = -minDist;
   }
-
+  
   outDistance = minDist;
   outDirX = bestOffset.x;
   outDirY = bestOffset.y;

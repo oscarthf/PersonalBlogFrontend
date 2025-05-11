@@ -20,7 +20,6 @@ export default function ImageDistanceField({
   onResult 
 }: Props) {
   
-  const radius = 30;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -52,6 +51,7 @@ export default function ImageDistanceField({
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
+      const radius = image.width * 0.25;// should be a square image padded on all sides with 25% image width
 
       const canvas = gl.canvas as HTMLCanvasElement;
       canvas.width = width;
