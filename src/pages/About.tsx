@@ -6,14 +6,13 @@ export default function About() {
             <SimWithDistanceField
                 repulseParticleRadius={100.0}
                 particleRadius={100.0}
-                maskRadius={100.0}
                 particleSpawnYMargin={0.0}
                 repulse_force={-0.001}
                 friction={1.0}
                 gravity={0.0}
                 particleCount={81}
-                rockImageSrc="/moon.png"
-                particleImageSrc="/star.png"
+                rockImageSources={["/moon.png"]}
+                particleImageSource="/star.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
                 backgroundColor={[0.0, 0.0, 0.0]} 
                 particleColor={[1.0, 1.0, 0.0]} // yellow

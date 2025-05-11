@@ -4,8 +4,8 @@ import fullscreenVS from "../shaders/fullscreen.vert?raw";
 import physicsFS from "../shaders/physics.frag?raw";
 import renderVS from "../shaders/renderParticles.vert?raw";
 import renderFS from "../shaders/renderParticles.frag?raw";
-import maskVS from "../shaders/rock.vert?raw";
-import maskFS from "../shaders/rock.frag?raw";
+import renderRockVS from "../shaders/renderRock.vert?raw";
+import renderRockFS from "../shaders/renderRock.frag?raw";
 import preProcessParticlesFS from "../shaders/preProcessParticles.frag?raw";
 import trailLineVS from "../shaders/trailLine.vert?raw";
 import trailLineFS from "../shaders/trailLine.frag?raw";
@@ -39,20 +39,19 @@ const BEZIER_CURVE_RESOLUTION = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
-  distanceMap?: WebGLTexture;
+  rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
-  dirXMap?: WebGLTexture;
-  dirYMap?: WebGLTexture;
-  maskMap?: WebGLTexture;
-  mask_radius: number;
+  rockDirXMaps: WebGLTexture[];
+  rockDirYMaps: WebGLTexture[];
+  rockImageTextures: WebGLTexture[];
   particleSpawnYMargin: number;
   repulse_force: number;
   friction: number;
   gravity: number;
   particleCount: number;
-  particleImageSrc: string;
-  rockImageSrc: string;
+  particleImageSource: string;
+  rockImageSources: string[];
   backgroundColor: number[];
   rockColor: number[];
   particleColor: number[];
@@ -63,20 +62,19 @@ interface WebGLCanvasProps {
 
 export default function WebGLCanvas({
   gl,
-  distanceMap,
+  rockDistanceFields,
   windowWidth,
   windowHeight,
-  dirXMap,
-  dirYMap,
-  maskMap,
-  mask_radius,
+  rockDirXMaps,
+  rockDirYMaps,
+  rockImageTextures,
   particleSpawnYMargin,
   repulse_force,
   friction,
   gravity,
   particleCount,
-  particleImageSrc,
-  rockImageSrc,
+  particleImageSource,
+  rockImageSources,
   backgroundColor,
   rockColor,
   particleColor,
@@ -237,18 +235,31 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_data"), 0);
 
-      if (distanceMap && dirXMap && dirYMap) {
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, distanceMap);
-        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_distanceMap"), 1);
+      for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
 
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, dirXMap);
-        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_dirXMap"), 2);
+        const rockDistanceField = rockDistanceFields[rock_i];
+        const rockDirXMap = rockDirXMaps[rock_i];
+        const rockDirYMap = rockDirYMaps[rock_i];
+        const rockImageTexture = rockImageTextures[rock_i];
 
-        gl.activeTexture(gl.TEXTURE3);
-        gl.bindTexture(gl.TEXTURE_2D, dirYMap);
-        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_dirYMap"), 3);
+        if (rockDistanceField == null || rockDirXMap == null || rockDirYMap == null || rockImageTexture == null) {
+          continue;
+        }
+      
+        gl.activeTexture(gl.TEXTURE1 + rock_i * 3);
+        gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
+        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_rockDistanceField"), 1 + rock_i * 3);
+
+        // gl.activeTexture(gl.TEXTURE2);
+        gl.activeTexture(gl.TEXTURE1 + rock_i * 3 + 1);
+        gl.bindTexture(gl.TEXTURE_2D, rockDirXMap);
+        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_rockDirXMap"), 2 + rock_i * 3);
+
+        // gl.activeTexture(gl.TEXTURE3);
+        gl.activeTexture(gl.TEXTURE1 + rock_i * 3 + 2);
+        gl.bindTexture(gl.TEXTURE_2D, rockDirYMap);
+        gl.uniform1i(gl.getUniformLocation(physicsProgram, "u_rockDirYMap"), 3 + rock_i * 3);
+
       }
 
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_rock_x"), rock_x * canvasSizeWidth);
@@ -340,34 +351,42 @@ export default function WebGLCanvas({
 
     function drawRock() {
 
-      if (maskMap) {
-        gl.useProgram(maskProgram);
+      gl.useProgram(renderRockProgram);
 
-        
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
+      for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
 
+        const rockImageTexture = rockImageTextures[rock_i];
+        const rockDirXMap = rockDirXMaps[rock_i];
+        const rockDirYMap = rockDirYMaps[rock_i];
+        const rockDistanceField = rockDistanceFields[rock_i];
+
+        if (rockImageTexture == null || rockDirXMap == null || rockDirYMap == null || rockDistanceField == null) {
+          continue;
+        }
+  
         gl.bindVertexArray(fullscreenVAO);
         gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_2D, maskMap);
-        gl.uniform1i(gl.getUniformLocation(maskProgram, "u_mask"), 4);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_x"), rock_x);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_y"), rock_y);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_width"), ROCK_WIDTH);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_rock_height"), ROCK_HEIGHT);
-        gl.uniform3f(gl.getUniformLocation(maskProgram, "u_rockColor"), rockColor[0], rockColor[1], rockColor[2]);
-        gl.uniform1f(gl.getUniformLocation(maskProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+        gl.bindTexture(gl.TEXTURE_2D, rockImageTexture);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_mask"), 4);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rock_x);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rock_y);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_width"), ROCK_WIDTH);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_height"), ROCK_HEIGHT);
+        gl.uniform3f(gl.getUniformLocation(renderRockProgram, "u_rockColor"), rockColor[0], rockColor[1], rockColor[2]);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-        
-        gl.disable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+          
+      }
+
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
         
-      }
-      
     }
 
     function drawParticles() {
@@ -673,7 +692,7 @@ export default function WebGLCanvas({
       
       const physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
       const renderParticlesProgram = createProgram(gl, renderVS, renderFS);
-      const maskProgram = createProgram(gl, maskVS, maskFS);
+      const renderRockProgram = createProgram(gl, renderRockVS, renderRockFS);
       const preProcessParticlesProgram = createProgram(gl, fullscreenVS, preProcessParticlesFS);
       const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
       const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
@@ -681,7 +700,7 @@ export default function WebGLCanvas({
       return {
         physicsProgram,
         renderParticlesProgram,
-        maskProgram,
+        renderRockProgram,
         preProcessParticlesProgram,
         trailLineProgram,
         trailDisplayProgram,
@@ -693,7 +712,7 @@ export default function WebGLCanvas({
 
     const { physicsProgram,
             renderParticlesProgram, 
-            maskProgram, 
+            renderRockProgram, 
             preProcessParticlesProgram, 
             trailLineProgram, 
             trailDisplayProgram } = createPrograms();
@@ -702,7 +721,7 @@ export default function WebGLCanvas({
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
-    spriteImage.src = particleImageSrc;
+    spriteImage.src = particleImageSource;
     let spriteReady = false;
 
     spriteImage.onload = () => {
@@ -818,7 +837,7 @@ export default function WebGLCanvas({
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
 
-  }, [gl, distanceMap, dirXMap, dirYMap, maskMap]);
+  }, [gl, rockDistanceFields, rockDirXMaps, rockDirYMaps, rockImageTextures]);
 
   return null; // no canvas here — it's passed in from parent
 }

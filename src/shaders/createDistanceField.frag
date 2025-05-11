@@ -38,7 +38,7 @@ void main() {
       if (currentDistance > float(u_radius)) {
         continue; // Skip pixels outside the force radius
       }
-      float pixel = texture(u_source, sampleUV).r;
+      float pixel = texture(u_source, sampleUV).a;
       bool samplePixelIsBlack = pixel < 0.5;
       if ((centerPixelWasBlack && !samplePixelIsBlack) || 
           (!centerPixelWasBlack && samplePixelIsBlack)) {

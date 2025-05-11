@@ -6,9 +6,9 @@ in vec2 v_uv;
 out vec4 outColor;
 
 uniform sampler2D u_data;
-uniform sampler2D u_distanceMap;
-uniform sampler2D u_dirXMap;
-uniform sampler2D u_dirYMap;
+uniform sampler2D u_rockDistanceField;
+uniform sampler2D u_rockDirXMap;
+uniform sampler2D u_rockDirYMap;
 uniform sampler2D u_sideMask;
 
 uniform float u_gravity;
@@ -85,9 +85,9 @@ void main() {
                        && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
   
   if (isInsideRock) {
-    dist = texture(u_distanceMap, scaled_rock_pos).r;
-    dir.x = texture(u_dirXMap, scaled_rock_pos).r;
-    dir.y = texture(u_dirYMap, scaled_rock_pos).r;
+    dist = texture(u_rockDistanceField, scaled_rock_pos).r;
+    dir.x = texture(u_rockDirXMap, scaled_rock_pos).r;
+    dir.y = texture(u_rockDirYMap, scaled_rock_pos).r;
 
     dir.x *= u_rock_width;
     dir.y *= u_rock_height;

@@ -6,7 +6,6 @@ import { createProgram } from "../web_gl_util/general";
 interface Props {
   gl: WebGL2RenderingContext;
   src: string;
-  radius: number;
   onResult?: (result: {
     distance: WebGLTexture;
     dirX: WebGLTexture;
@@ -18,9 +17,10 @@ interface Props {
 export default function ImageDistanceField({ 
   gl, 
   src, 
-  radius,
   onResult 
 }: Props) {
+  
+  const radius = 30;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
