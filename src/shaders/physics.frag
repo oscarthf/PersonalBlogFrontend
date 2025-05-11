@@ -6,10 +6,27 @@ in vec2 v_uv;
 out vec4 outColor;
 
 uniform sampler2D u_data;
-uniform sampler2D u_distanceMap;
-uniform sampler2D u_dirXMap;
-uniform sampler2D u_dirYMap;
-uniform sampler2D u_sideMask;
+uniform sampler2D u_preparedParticleCellData;
+
+// up to 3 "rocks"
+
+uniform sampler2D u_rockDistanceField_0;
+uniform sampler2D u_rockDirXMap_0;
+uniform sampler2D u_rockDirYMap_0;
+
+uniform sampler2D u_rockDistanceField_1;
+uniform sampler2D u_rockDirXMap_1;
+uniform sampler2D u_rockDirYMap_1;
+
+uniform sampler2D u_rockDistanceField_2;
+uniform sampler2D u_rockDirXMap_2;
+uniform sampler2D u_rockDirYMap_2;
+
+uniform sampler2D u_rockDistanceField_3;
+uniform sampler2D u_rockDirXMap_3;
+uniform sampler2D u_rockDirYMap_3;
+
+//
 
 uniform float u_gravity;
 uniform float u_friction;
@@ -18,13 +35,29 @@ uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
 uniform float u_canvasSizeHeight;
 uniform float u_spawnYMargin;
-uniform float u_particle_radius;
 uniform float u_repulse_particle_radius;
 
-uniform float rock_x;
-uniform float rock_y;
-uniform float rock_w;
-uniform float rock_h;
+// up to 3 "rocks"
+
+uniform float u_rock_x_0;
+uniform float u_rock_y_0;
+uniform float u_rock_width_0;
+uniform float u_rock_height_0;
+
+uniform float u_rock_x_1;
+uniform float u_rock_y_1;
+uniform float u_rock_width_1;
+uniform float u_rock_height_1;
+
+uniform float u_rock_x_2;
+uniform float u_rock_y_2;
+uniform float u_rock_width_2;
+uniform float u_rock_height_2;
+
+uniform float u_rock_x_3;
+uniform float u_rock_y_3;
+uniform float u_rock_width_3;
+uniform float u_rock_height_3;
 
 float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -39,9 +72,9 @@ float lengthSquared(vec2 v) {
   return dot(v, v);
 }
 
-vec4 getSideMask(ivec2 index) {
+vec4 getPreparedParticleCellData(ivec2 index) {
   vec2 uv = (vec2(index) + 0.5) / u_particleTextureSize;
-  return texture(u_sideMask, uv);
+  return texture(u_preparedParticleCellData, uv);
 }
 
 void main() {
@@ -78,52 +111,102 @@ void main() {
 
   // TODO: Add particle radius to collision detection
 
-  vec2 scaled_rock_pos = pos;
-  scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_w;
-  scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_h;
+  for (int rock_i = 0; rock_i < 4; rock_i++) {
 
-  bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0
-                       && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
-  
-  if (isInsideRock) {
-    dist = texture(u_distanceMap, scaled_rock_pos).r;
-    dir.x = texture(u_dirXMap, scaled_rock_pos).r;
-    dir.y = texture(u_dirYMap, scaled_rock_pos).r;
+    float rock_x = 0.0;
+    float rock_y = 0.0;
+    float rock_width = 0.0;
+    float rock_height = 0.0;
 
-    dir.x *= rock_w;
-    dir.y *= rock_h;
-      
-    // === COLLISION WITH BLACK SHAPE ===
+    if (rock_i == 0) {
+      rock_x = u_rock_x_0;
+      rock_y = u_rock_y_0;
+      rock_width = u_rock_width_0;
+      rock_height = u_rock_height_0;
+    } else if (rock_i == 1) {
+      rock_x = u_rock_x_1;
+      rock_y = u_rock_y_1;
+      rock_width = u_rock_width_1;
+      rock_height = u_rock_height_1;
+    } else if (rock_i == 2) {
+      rock_x = u_rock_x_2;
+      rock_y = u_rock_y_2;
+      rock_width = u_rock_width_2;
+      rock_height = u_rock_height_2;
+    } else if (rock_i == 3) {
+      rock_x = u_rock_x_3;
+      rock_y = u_rock_y_3;
+      rock_width = u_rock_width_3;
+      rock_height = u_rock_height_3;
+    }
 
-    vec2 normal = normalize(dir);
+    if (rock_x == 0.0) {
+      continue;
+    }
 
-    if (dist < 0.0 && length(normal) > 0.0) {
-      // Reflect velocity to bounce
-      vel = reflect(vel, normal);
+    vec2 scaled_rock_pos = pos;
+    scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_width;
+    scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_height;
 
-      dist = length(dir);
+    bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0
+                        && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
+    
+    if (isInsideRock) {
 
-      // Push particle just outside the surface to avoid sticking
-      float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
-      pos -= normal * pushOutDist;
+      if (rock_i == 0) {
+        dist = texture(u_rockDistanceField_0, scaled_rock_pos).r;
+        dir.x = texture(u_rockDirXMap_0, scaled_rock_pos).r;
+        dir.y = texture(u_rockDirYMap_0, scaled_rock_pos).r;
+      } else if (rock_i == 1) {
+        dist = texture(u_rockDistanceField_1, scaled_rock_pos).r;
+        dir.x = texture(u_rockDirXMap_1, scaled_rock_pos).r;
+        dir.y = texture(u_rockDirYMap_1, scaled_rock_pos).r;
+      } else if (rock_i == 2) {
+        dist = texture(u_rockDistanceField_2, scaled_rock_pos).r;
+        dir.x = texture(u_rockDirXMap_2, scaled_rock_pos).r;
+        dir.y = texture(u_rockDirYMap_2, scaled_rock_pos).r;
+      } else if (rock_i == 3) {
+        dist = texture(u_rockDistanceField_3, scaled_rock_pos).r;
+        dir.x = texture(u_rockDirXMap_3, scaled_rock_pos).r;
+        dir.y = texture(u_rockDirYMap_3, scaled_rock_pos).r;
+      }
+
+      // === COLLISION WITH ROCK ===
+
+      dir.x *= rock_width;
+      dir.y *= rock_height;
+        
+      // === COLLISION WITH BLACK SHAPE ===
+
+      vec2 normal = normalize(dir);
+
+      if (dist < 0.0 && length(normal) > 0.0) {
+        // Reflect velocity to bounce
+        vel = reflect(vel, normal);
+
+        dist = length(dir);
+
+        // Push particle just outside the surface to avoid sticking
+        float pushOutDist = 0.002 - dist; // 0.002 is a small epsilon
+        pos -= normal * pushOutDist;
+      }
+
     }
 
   }
 
   // === COLLISION AVOIDANCE ===
 
-  float particle_radius = u_particle_radius;
   float repulse_particle_radius = u_repulse_particle_radius;
-  float particle_radius_squared = particle_radius * particle_radius;
   float repulse_particle_radius_squared = repulse_particle_radius * repulse_particle_radius;
   vec2 repulse = vec2(0.0);
 
-  vec4 sideMask = getSideMask(fragIndex);
+  vec4 preparedParticleCellData = getPreparedParticleCellData(fragIndex);
   
-  float cell_x = sideMask.r;
-  float cell_y = sideMask.g;
-  float left_right_mark = sideMask.b;
-  float up_down_mark = sideMask.a;
+  float cell_x = preparedParticleCellData.r;
+  float cell_y = preparedParticleCellData.g;
+  float left_right_mark = preparedParticleCellData.b;
+  float up_down_mark = preparedParticleCellData.a;
 
   bool isOnLeftSide = left_right_mark < 0.25;
   bool isOnRightSide = left_right_mark > 0.75;
@@ -145,10 +228,10 @@ void main() {
       other_pos.x *= u_canvasSizeWidth;
       other_pos.y *= u_canvasSizeWidth;
 
-      vec4 otherSideMask = getSideMask(ivec2(x, y));
+      vec4 otherPreparedParticleCellData = getPreparedParticleCellData(ivec2(x, y));
 
-      float other_cell_x = otherSideMask.r;
-      float other_cell_y = otherSideMask.g;
+      float other_cell_x = otherPreparedParticleCellData.r;
+      float other_cell_y = otherPreparedParticleCellData.g;
 
       float cell_dist_x = abs(cell_x - other_cell_x);
       float cell_dist_y = abs(cell_y - other_cell_y);
@@ -160,8 +243,8 @@ void main() {
         continue;
       }
 
-      float other_left_right_mark = otherSideMask.b;
-      float other_up_down_mark = otherSideMask.a;
+      float other_left_right_mark = otherPreparedParticleCellData.b;
+      float other_up_down_mark = otherPreparedParticleCellData.a;
 
       bool other_isOnLeftSide = other_left_right_mark < 0.25;
       bool other_isOnRightSide = other_left_right_mark > 0.75;

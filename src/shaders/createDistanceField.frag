@@ -15,11 +15,11 @@ void main() {
   vec2 origin = v_uv;
   float minDist = 1e10;
   vec2 bestOffset = vec2(0.0);
-  bool centerPixelWasBlack = false;
+  bool centerPixelWasBlack = true;
 
-  float center = texture(u_source, origin).r;
+  float center = texture(u_source, origin).a;
   if (center < 0.5) {
-    centerPixelWasBlack = true;
+    centerPixelWasBlack = false;
   }
 
   for (int dy = -u_radius; dy <= u_radius; dy++) {
@@ -38,7 +38,7 @@ void main() {
       if (currentDistance > float(u_radius)) {
         continue; // Skip pixels outside the force radius
       }
-      float pixel = texture(u_source, sampleUV).r;
+      float pixel = texture(u_source, sampleUV).a;
       bool samplePixelIsBlack = pixel < 0.5;
       if ((centerPixelWasBlack && !samplePixelIsBlack) || 
           (!centerPixelWasBlack && samplePixelIsBlack)) {
