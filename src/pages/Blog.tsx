@@ -47,9 +47,13 @@ export default function Blog() {
                 friction={0.9}
                 gravity={-0.2}
                 particleCount={25}
-                rockImageSources={["/sun.png"]}
                 particleImageSource="/cloud.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
+                rockImageSources={["/sun.png"]}
+                rockXPositions={[0.4]}
+                rockYPositions={[0.4]}
+                rockWidths={[0.2]}
+                rockHeights={[0.2]}
                 particleColor={[1.0, 1.0, 1.0]} // white
                 backgroundColor={[0.6, 0.8, 1.0]}
                 trailLineColor={[1.0, 1.0, 1.0]} 

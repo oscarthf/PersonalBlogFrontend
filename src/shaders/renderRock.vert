@@ -9,6 +9,7 @@ uniform float u_rock_x;
 uniform float u_rock_y;
 uniform float u_rock_width;
 uniform float u_rock_height;
+
 uniform float u_height_over_width;
 uniform vec3 u_rockColor;
 

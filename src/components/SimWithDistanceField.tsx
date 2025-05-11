@@ -11,9 +11,13 @@ interface SimWithDistanceFieldProps {
   gravity: number;
   particleCount: number;
   particleImageSource: string;
-  rockImageSources: string[];
   backgroundColor: number[];
   rockColor: number[];
+  rockImageSources: string[];
+  rockXPositions: number[];
+  rockYPositions: number[];
+  rockWidths: number[];
+  rockHeights: number[];
   particleColor: number[];
   trailLineColor: number[];
 }
@@ -27,23 +31,21 @@ export default function SimWithDistanceField({
   gravity,
   particleCount,
   particleImageSource,
-  rockImageSources,
   backgroundColor,
   rockColor,
+  rockImageSources,
+  rockXPositions,
+  rockYPositions,
+  rockWidths,
+  rockHeights,
   particleColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [gl, setGL] = useState<WebGL2RenderingContext | null>(null);
-  // const [maskTex, setMaskTex] = useState<WebGLTexture | null>(null);
-  // const [textures, setTextures] = useState<{
-  //   distanceField?: WebGLTexture;
-  //   dirX?: WebGLTexture;
-  //   dirY?: WebGLTexture;
-  // }>({});
-  const [maskTex, setMaskTex] = useState<WebGLTexture[]>([]);
-  const [textures, setTextures] = useState<{
+  const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
+  const [textures, setDistanceFieldTextures] = useState<{
     distanceFields: WebGLTexture[];
     dirX: WebGLTexture[];
     dirY: WebGLTexture[];
@@ -96,7 +98,7 @@ export default function SimWithDistanceField({
                 gl={gl}
                 src={rockImageSources[index]}
                 onResult={({ distance, dirX, dirY, mask }) => {
-                  setTextures(prev => {
+                  setDistanceFieldTextures(prev => {
                     const distanceFields = [...prev.distanceFields];
                     const dirXArr = [...prev.dirX];
                     const dirYArr = [...prev.dirY];
@@ -108,7 +110,7 @@ export default function SimWithDistanceField({
                     return { distanceFields, dirX: dirXArr, dirY: dirYArr };
                   });
 
-                  setMaskTex(prev => {
+                  setRockImageTextures(prev => {
                     const masks = [...prev];
                     masks[index] = mask;
                     return masks;
@@ -128,8 +130,8 @@ export default function SimWithDistanceField({
                   src={rockImageSources}
                   radius={maskRadius}
                   onResult={({ distance, dirX, dirY, mask }) => {
-                      setTextures({ distance, dirX, dirY });
-                      setMaskTex(mask);
+                      setDistanceFieldTextures({ distance, dirX, dirY });
+                      setRockImageTextures(mask);
                   }}
               /> */}
               <WebGLCanvas
@@ -137,18 +139,22 @@ export default function SimWithDistanceField({
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
                   windowHeight={(windowHeight - windowWidth * 0.07)}
-                  rockDirXMaps={textures.dirX}
-                  rockDirYMaps={textures.dirY}
-                  rockImageTextures={maskTex}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
                   friction={friction}
                   gravity={gravity}
                   particleCount={particleCount}
-                  rockImageSources={rockImageSources}
                   particleImageSource={particleImageSource}
                   backgroundColor={backgroundColor}
                   rockColor={rockColor}
+                  rockImageSources={rockImageSources}
+                  rockXPositions={rockXPositions}
+                  rockYPositions={rockYPositions}
+                  rockWidths={rockWidths}
+                  rockHeights={rockHeights}
+                  rockDirXMaps={textures.dirX}
+                  rockDirYMaps={textures.dirY}
+                  rockImageTextures={rockImageTextures}
                   particleColor={particleColor}
                   trailLineColor={trailLineColor}
                   particle_radius={particleRadius}

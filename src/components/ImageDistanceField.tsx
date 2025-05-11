@@ -58,8 +58,8 @@ export default function ImageDistanceField({
       canvas.height = height;
 
       // Upload source image to texture
-      const sourceTex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, sourceTex);
+      const imageTexture = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -93,7 +93,7 @@ export default function ImageDistanceField({
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, sourceTex);
+      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
       gl.uniform1i(gl.getUniformLocation(program, "u_source"), 0);
       gl.uniform1i(gl.getUniformLocation(program, "u_radius"), radius);
       gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), width, height);
@@ -104,7 +104,7 @@ export default function ImageDistanceField({
         distance: texDist,
         dirX: texDirX,
         dirY: texDirY,
-        mask: sourceTex
+        mask: imageTexture
       });
     });
   }, [gl, src]);

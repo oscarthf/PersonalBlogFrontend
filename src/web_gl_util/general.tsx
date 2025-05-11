@@ -1,6 +1,24 @@
 
+export const getMousePos = (canvas: HTMLCanvasElement,
+                            evt: MouseEvent,
+                            height_over_width: number): { x: number; y: number } => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) / rect.width;
+    const y_pre = 1 - (evt.clientY - rect.top) / rect.height;
+    const y = y_pre * height_over_width;
+    return { x, y };
+}
 
-
+export const getTouchPos = (canvas: HTMLCanvasElement, 
+                            evt: TouchEvent,
+                            height_over_width: number): { x: number; y: number } => {
+    const rect = canvas.getBoundingClientRect();
+    const touch = evt.touches[0] || evt.changedTouches[0];
+    const x = (touch.clientX - rect.left) / rect.width;
+    const y_pre = 1 - (touch.clientY - rect.top) / rect.height;
+    const y = y_pre * height_over_width;
+    return { x, y };
+}
 
 export const loadSpriteImage = (gl: WebGLRenderingContext,
                                 spriteImage: HTMLImageElement): WebGLTexture => {
