@@ -119,21 +119,7 @@ export default function SimWithDistanceField({
 
               />
             ))}
-{/*         
-        
-        
-        
-        {gl && (
-          <>
-              <ImageDistanceField
-                  gl={gl}
-                  src={rockImageSources}
-                  radius={maskRadius}
-                  onResult={({ distance, dirX, dirY, mask }) => {
-                      setDistanceFieldTextures({ distance, dirX, dirY });
-                      setRockImageTextures(mask);
-                  }}
-              /> */}
+
               <WebGLCanvas
                   gl={gl}
                   rockDistanceFields={textures.distanceFields}
