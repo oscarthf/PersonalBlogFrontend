@@ -21,7 +21,7 @@ const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (
 const NUM_PARTICLE_FRAMES = 8;
 
 const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
-const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.3;
+const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.9;
 
 const TRAIL_HISTORY_LENGTH = 8;
 const TRAIL_HISTORY_STEP_SIZE = 8;

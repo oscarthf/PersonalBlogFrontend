@@ -8,8 +8,8 @@ export default function About() {
                 particleRadius={100.0}
                 maskRadius={100.0}
                 particleSpawnYMargin={0.0}
-                repulse_force={-0.005}
-                friction={0.98}
+                repulse_force={-0.001}
+                friction={1.0}
                 gravity={0.0}
                 particleCount={81}
                 spriteImageSrc="/particle.png"

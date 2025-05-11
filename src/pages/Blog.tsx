@@ -43,10 +43,10 @@ export default function Blog() {
                 repulseParticleRadius={100.0}
                 particleRadius={100.0}
                 maskRadius={100.0}
-                particleSpawnYMargin={0.3}
-                repulse_force={0.1}
+                particleSpawnYMargin={0.5}
+                repulse_force={0.01}
                 friction={0.9}
-                gravity={0.2}
+                gravity={-0.2}
                 particleCount={25}
                 spriteImageSrc="/particle.png"
                 backgroundColor={[0.6, 0.8, 1.0]}

@@ -213,7 +213,7 @@ void main() {
         // check if is on the top side of the screen
         if (other_isOnTopSide && isOnBottomSide) {
           // check for wrapped particles on the bottom side of the screen
-          vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSizeWidth);
+          vec2 wrapped_pos = other_pos - vec2(0.0, u_canvasSizeHeight);
           vec2 delta = pos - wrapped_pos;
           if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
             // Check if the distance is less than the repulse_particle_radius
@@ -228,7 +228,7 @@ void main() {
         // check if is on the bottom side of the screen
         if (other_isOnBottomSide && isOnTopSide) {
           // check for wrapped particles on the top side of the screen
-          vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSizeWidth);
+          vec2 wrapped_pos = other_pos + vec2(0.0, u_canvasSizeHeight);
           vec2 delta = pos - wrapped_pos;
           if (abs(delta.x) < repulse_particle_radius || abs(delta.y) < repulse_particle_radius) {
             // Check if the distance is less than the repulse_particle_radius
