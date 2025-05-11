@@ -12,7 +12,7 @@ export default function About() {
                 friction={1.0}
                 gravity={0.0}
                 particleCount={81}
-                rockImageSrc="/black_hole.png"
+                rockImageSrc="/moon.png"
                 particleImageSrc="/star.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
                 backgroundColor={[0.0, 0.0, 0.0]} 

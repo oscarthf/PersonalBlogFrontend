@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import distanceShaderSrc from "../shaders/distance.frag?raw";
+import distanceShaderSrc from "../shaders/createDistanceField.frag?raw";
 import fullscreenVS from "../shaders/fullscreen.vert?raw";
+import { createProgram } from "../web_gl_util/general";
 
 interface Props {
   gl: WebGL2RenderingContext;
@@ -48,27 +49,6 @@ export default function ImageDistanceField({
       return tex;
     };
 
-    const createShader = (type: number, source: string): WebGLShader => {
-      const shader = gl.createShader(type)!;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error("Shader error: " + gl.getShaderInfoLog(shader));
-      }
-      return shader;
-    };
-
-    const createProgram = (vs: string, fs: string): WebGLProgram => {
-      const program = gl.createProgram()!;
-      gl.attachShader(program, createShader(gl.VERTEX_SHADER, vs));
-      gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fs));
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error("Link error: " + gl.getProgramInfoLog(program));
-      }
-      return program;
-    };
-
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
@@ -106,7 +86,8 @@ export default function ImageDistanceField({
       }
 
       // Compile and run shader
-      const program = createProgram(fullscreenVS, distanceShaderSrc);
+      const program = createProgram(gl, fullscreenVS, distanceShaderSrc);
+
       gl.useProgram(program);
       gl.viewport(0, 0, width, height);
       gl.clearColor(0, 0, 0, 1);

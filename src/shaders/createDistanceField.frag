@@ -15,11 +15,11 @@ void main() {
   vec2 origin = v_uv;
   float minDist = 1e10;
   vec2 bestOffset = vec2(0.0);
-  bool centerPixelWasBlack = false;
+  bool centerPixelWasBlack = true;
 
-  float center = texture(u_source, origin).r;
+  float center = texture(u_source, origin).a;
   if (center < 0.5) {
-    centerPixelWasBlack = true;
+    centerPixelWasBlack = false;
   }
 
   for (int dy = -u_radius; dy <= u_radius; dy++) {

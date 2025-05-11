@@ -7,8 +7,8 @@ out vec3 v_rockColor;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
-uniform float u_rock_w;
-uniform float u_rock_h;
+uniform float u_rock_width;
+uniform float u_rock_height;
 uniform float u_height_over_width;
 uniform vec3 u_rockColor;
 
@@ -27,8 +27,8 @@ void main() {
   vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
 
-  pos.x = u_rock_x + u_rock_w * pos.x;
-  pos.y = (u_rock_y + u_rock_h * pos.y) / u_height_over_width;
+  pos.x = u_rock_x + u_rock_width * pos.x;
+  pos.y = (u_rock_y + u_rock_height * pos.y) / u_height_over_width;
   
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }

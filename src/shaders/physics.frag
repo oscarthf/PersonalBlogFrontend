@@ -18,13 +18,12 @@ uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
 uniform float u_canvasSizeHeight;
 uniform float u_spawnYMargin;
-uniform float u_particle_radius;
 uniform float u_repulse_particle_radius;
 
-uniform float rock_x;
-uniform float rock_y;
-uniform float rock_w;
-uniform float rock_h;
+uniform float u_rock_x;
+uniform float u_rock_y;
+uniform float u_rock_width;
+uniform float u_rock_height;
 
 float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -79,8 +78,8 @@ void main() {
   // TODO: Add particle radius to collision detection
 
   vec2 scaled_rock_pos = pos;
-  scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_w;
-  scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_h;
+  scaled_rock_pos.x = (scaled_rock_pos.x - u_rock_x) / u_rock_width;
+  scaled_rock_pos.y = (scaled_rock_pos.y - u_rock_y) / u_rock_height;
 
   bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0
                        && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
@@ -90,8 +89,8 @@ void main() {
     dir.x = texture(u_dirXMap, scaled_rock_pos).r;
     dir.y = texture(u_dirYMap, scaled_rock_pos).r;
 
-    dir.x *= rock_w;
-    dir.y *= rock_h;
+    dir.x *= u_rock_width;
+    dir.y *= u_rock_height;
       
     // === COLLISION WITH BLACK SHAPE ===
 
@@ -112,9 +111,7 @@ void main() {
 
   // === COLLISION AVOIDANCE ===
 
-  float particle_radius = u_particle_radius;
   float repulse_particle_radius = u_repulse_particle_radius;
-  float particle_radius_squared = particle_radius * particle_radius;
   float repulse_particle_radius_squared = repulse_particle_radius * repulse_particle_radius;
   vec2 repulse = vec2(0.0);
 

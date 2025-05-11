@@ -12,7 +12,7 @@ function Home() {
             friction={0.9}
             gravity={0.8}
             particleCount={49}
-            rockImageSrc="/boulder.png"
+            rockImageSrc="/opal_0.png"
             particleImageSrc="/wave.png"
             rockColor={[165/256, 42/256, 42/256]} // brown
             particleColor={[1.0, 1.0, 1.0]} // white
