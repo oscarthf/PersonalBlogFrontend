@@ -3,12 +3,14 @@
 precision highp float;
 
 out vec2 v_uv;
+out vec3 v_rockColor;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
 uniform float u_rock_w;
 uniform float u_rock_h;
 uniform float u_height_over_width;
+uniform vec3 u_rockColor;
 
 vec2 getPos(int id) {
   if (id == 0) return vec2(0.0, 0.0);
@@ -20,6 +22,8 @@ vec2 getPos(int id) {
 }
 
 void main() {
+
+  v_rockColor = u_rockColor;
   vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
 

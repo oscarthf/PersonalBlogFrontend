@@ -2,21 +2,41 @@ import { useEffect, useRef, useState } from "react";
 import ImageDistanceField from "./ImageDistanceField";
 import WebGLCanvas from "./WebGLCanvas";
 
-const repulseParticleRadius = 50;
-const particleRadius = 30;
-const maskRadius = 30;
+// const repulseParticleRadius = 50;
+// const particleRadius = 30;
+// const maskRadius = 30;
 
 interface SimWithDistanceFieldProps {
+  repulseParticleRadius: number;
+  particleRadius: number;
+  maskRadius: number;
+  particleSpawnYMargin: number;
+  repulse_force: number;
+  friction: number;
+  gravity: number;
   particleCount: number;
-  spriteImageSrc: string;
+  particleImageSrc: string;
+  rockImageSrc: string;
   backgroundColor: number[];
+  rockColor: number[];
+  particleColor: number[];
   trailLineColor: number[];
 }
 
 export default function SimWithDistanceField({
+  repulseParticleRadius,
+  particleRadius,
+  maskRadius,
+  particleSpawnYMargin,
+  repulse_force,
+  friction,
+  gravity,
   particleCount,
-  spriteImageSrc,
+  particleImageSrc,
+  rockImageSrc,
   backgroundColor,
+  rockColor,
+  particleColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
 
@@ -67,7 +87,7 @@ export default function SimWithDistanceField({
           <>
               <ImageDistanceField
                   gl={gl}
-                  src="/bw_mask.png"
+                  src={rockImageSrc}
                   radius={maskRadius}
                   onResult={({ distance, dirX, dirY, mask }) => {
                       setTextures({ distance, dirX, dirY });
@@ -83,9 +103,16 @@ export default function SimWithDistanceField({
                   dirYMap={textures.dirY}
                   maskMap={maskTex}
                   mask_radius={maskRadius}
+                  particleSpawnYMargin={particleSpawnYMargin}
+                  repulse_force={repulse_force}
+                  friction={friction}
+                  gravity={gravity}
                   particleCount={particleCount}
-                  spriteImageSrc={spriteImageSrc}
+                  rockImageSrc={rockImageSrc}
+                  particleImageSrc={particleImageSrc}
                   backgroundColor={backgroundColor}
+                  rockColor={rockColor}
+                  particleColor={particleColor}
                   trailLineColor={trailLineColor}
                   particle_radius={particleRadius}
                   repulse_particle_radius={repulseParticleRadius}

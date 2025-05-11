@@ -5,12 +5,14 @@ export default function Curtain({
     isVisible, 
     onNavigate, 
     onFinish, 
-    isFirstLoad 
+    isFirstLoad, 
+    animationDirection 
 }: { 
     isVisible: boolean; 
     onNavigate: () => void; 
     onFinish: () => void; 
     isFirstLoad: boolean; 
+    animationDirection: 'up' | 'down'; 
 }) {
     const [animationClass, setAnimationClass] = useState('');
     const [visible, setVisible] = useState(false);
@@ -18,24 +20,23 @@ export default function Curtain({
     useEffect(() => {
         if (isFirstLoad) {
             setVisible(true);
-            setAnimationClass('curtain-initial');// Start fully down
-            // Small timeout to set up webgl
+            setAnimationClass('curtain-initial');
             setTimeout(() => {
-                setAnimationClass('curtain-exit');
-            }, 1000);// Wait 1 second
+                setAnimationClass('curtain-exit-down');
+            }, 1000);
         } else if (isVisible) {
             setVisible(true);
-            setAnimationClass('curtain-enter');
+            setAnimationClass(`curtain-enter-${animationDirection}`);
         }
-    }, [isVisible, isFirstLoad]);
+    }, [isVisible, isFirstLoad, animationDirection]);
 
     const handleAnimationEnd = () => {
-        if (animationClass === 'curtain-enter') {
+        if (animationClass.startsWith('curtain-enter')) {
             onNavigate();
             setTimeout(() => {
-                setAnimationClass('curtain-exit');
+                setAnimationClass(`curtain-exit-${animationDirection}`);
             }, 1000);
-        } else if (animationClass === 'curtain-exit') {
+        } else if (animationClass.startsWith('curtain-exit')) {
             setVisible(false);
             setAnimationClass('');
             onFinish();

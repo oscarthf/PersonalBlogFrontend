@@ -10,11 +10,18 @@ function AppContent() {
     const navigate = useNavigate();
     const location = useLocation();
     const [isCurtainVisible, setCurtainVisible] = useState(false);
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [nextPath, setNextPath] = useState<string | null>(null);
+    const [animationDirection, setAnimationDirection] = useState<'up' | 'down'>('down');
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+    const pageOrder = ["/", "/blog", "/about"];
 
     const handleNavClick = (path: string) => {
         if (path !== location.pathname) {
+            const currentIndex = pageOrder.indexOf(location.pathname);
+            const nextIndex = pageOrder.indexOf(path);
+
+            setAnimationDirection(nextIndex > currentIndex ? 'down' : 'up');
             setCurtainVisible(true);
             setNextPath(path);
         }
@@ -29,7 +36,7 @@ function AppContent() {
 
     const handleFinish = () => {
         setCurtainVisible(false);
-        setIsFirstLoad(false); // Disable initial load effect after first reveal
+        setIsFirstLoad(false);
     };
 
     return (
@@ -37,6 +44,7 @@ function AppContent() {
             <Curtain 
                 isVisible={isCurtainVisible} 
                 isFirstLoad={isFirstLoad} 
+                animationDirection={animationDirection} 
                 onNavigate={handleNavigate} 
                 onFinish={handleFinish} 
             />

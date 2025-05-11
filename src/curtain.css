@@ -13,20 +13,41 @@
     transform: translateY(0%);
 }
 
-.curtain-enter {
+/* Enter animations */
+.curtain-enter-down {
     animation: curtainDown 0.5s forwards;
 }
 
-.curtain-exit {
+.curtain-enter-up {
+    animation: curtainUpEnter 0.5s forwards;
+}
+
+/* Exit animations */
+.curtain-exit-down {
+    animation: curtainDownExit 0.5s forwards;
+}
+
+.curtain-exit-up {
     animation: curtainUp 0.5s forwards;
 }
 
+/* Keyframes */
 @keyframes curtainDown {
     from { transform: translateY(-100%); }
     to { transform: translateY(0%); }
 }
 
-@keyframes curtainUp {
+@keyframes curtainDownExit {
     from { transform: translateY(0%); }
     to { transform: translateY(100%); }
+}
+
+@keyframes curtainUpEnter {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0%); }
+}
+
+@keyframes curtainUp {
+    from { transform: translateY(0%); }
+    to { transform: translateY(-100%); }
 }

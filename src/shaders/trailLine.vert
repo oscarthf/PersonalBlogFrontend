@@ -133,7 +133,6 @@ void main() {
   prev.y /= u_height_over_width;
 
   vec2 delta = curr - prev;
-  // vec2 prev_dir = curr - prev;
   float delta_mag = length(delta);
 
   vec2 curr_direction = curr_full.zw;
@@ -178,14 +177,8 @@ void main() {
 
   v_uv.x = (((a_corner + 1.0) * 0.5) + float(frameNumber));
 
-  // if (segment_index == 0) {
-  //   v_uv.y = 0.0;
-  // } else {
-      
   float pre_y = ((float(segment_index - 1) + u_bezier_remainder) * float(bezierCurveLength) + float(bezier_curve_index));
   v_uv.y = pre_y / animationLength_f;
-
-  // }
 
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }
