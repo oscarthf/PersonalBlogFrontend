@@ -1,16 +1,16 @@
 import { useEffect } from "react";
 
-import fullscreenVS from "../shaders/fullscreen.vert?raw";
-import physicsFS from "../shaders/physics.frag?raw";
-import renderVS from "../shaders/renderParticles.vert?raw";
-import renderFS from "../shaders/renderParticles.frag?raw";
-import renderRockVS from "../shaders/renderRock.vert?raw";
-import renderRockFS from "../shaders/renderRock.frag?raw";
-import preProcessParticlesFS from "../shaders/preProcessParticles.frag?raw";
-import trailLineVS from "../shaders/trailLine.vert?raw";
-import trailLineFS from "../shaders/trailLine.frag?raw";
-import trailDisplayVS from "../shaders/trailDisplay.vert?raw";
-import trailDisplayFS from "../shaders/trailDisplay.frag?raw";
+import fullscreenVS from "../../shaders/fullscreen.vert?raw";
+import physicsFS from "../../shaders/physics.frag?raw";
+import renderVS from "../../shaders/renderParticles.vert?raw";
+import renderFS from "../../shaders/renderParticles.frag?raw";
+import renderRockVS from "../../shaders/renderRock.vert?raw";
+import renderRockFS from "../../shaders/renderRock.frag?raw";
+import preProcessParticlesFS from "../../shaders/preProcessParticles.frag?raw";
+import trailLineVS from "../../shaders/trailLine.vert?raw";
+import trailLineFS from "../../shaders/trailLine.frag?raw";
+import trailDisplayVS from "../../shaders/trailDisplay.vert?raw";
+import trailDisplayFS from "../../shaders/trailDisplay.frag?raw";
 import { 
   getMousePos,
   getTouchPos,
@@ -22,7 +22,7 @@ import {
   createTrailIndicesAndCorners, 
   createParticleIndices, 
   createParticleVertices 
-} from "../web_gl_util/general";
+} from "../../util/webgl/general";
 
 const MAX_WINDOW_DIMENSION = 640;
 

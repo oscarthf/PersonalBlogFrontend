@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import distanceShaderSrc from "../shaders/createDistanceField.frag?raw";
-import fullscreenVS from "../shaders/fullscreen.vert?raw";
-import { createProgram } from "../web_gl_util/general";
+import distanceShaderSrc from "../../shaders/createDistanceField.frag?raw";
+import fullscreenVS from "../../shaders/fullscreen.vert?raw";
+import { createProgram } from "../../util/webgl/general";
 
 interface Props {
   gl: WebGL2RenderingContext;

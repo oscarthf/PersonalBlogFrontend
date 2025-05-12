@@ -56,6 +56,8 @@ export default function BlogPosts() {
                     Load More
                 </button>
             )}
+            <br />
+            <br />
         </>
     );
 }
