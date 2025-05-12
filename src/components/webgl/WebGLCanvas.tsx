@@ -152,6 +152,69 @@ export default function WebGLCanvas({
       }
     }
 
+    function applyRockCollisions(rockIndex: number) {
+
+      // Rock is a square image, centered at 0.5 * rock_width, 0.5 * rock_height
+      // Rock radius is rock_width / 4
+
+      let num_tries = 0;
+
+      while (num_tries < 10) {
+        num_tries++;
+
+        let has_made_changes = false;
+
+        for (let j = 0; j < rockImageTextures.length; j++) {
+
+          const rock_width = rockWidths[j];
+          const rock_height = rockHeights[j];
+          const rock_x = rockXPositions[j] + rock_width / 2;
+          const rock_y = rockYPositions[j] + rock_height / 2;
+
+          const rock_radius = Math.max(rock_width, rock_height) / 4;
+
+          for (let i = 0; i < rockImageTextures.length; i++) {
+            if (i === j) continue;
+            if (i === rockIndex) continue;
+
+            const other_rock_width = rockWidths[i];
+            const other_rock_height = rockHeights[i];
+            const other_rock_x = rockXPositions[i] + other_rock_width / 2;
+            const other_rock_y = rockYPositions[i] + other_rock_height / 2;
+
+            const other_rock_radius = Math.max(other_rock_width, other_rock_height) / 4;
+            
+            const dx = other_rock_x - rock_x;
+            const dy = other_rock_y - rock_y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const min_distance = rock_radius + other_rock_radius;
+
+            if (distance < min_distance) {
+              const overlap = min_distance - distance;
+              const angle = Math.atan2(dy, dx);
+              const offsetX = Math.cos(angle) * overlap * 1.1;
+              const offsetY = Math.sin(angle) * overlap * 1.1;
+
+              rockXPositions[i] += offsetX;
+              rockYPositions[i] += offsetY;
+
+              has_made_changes = true;
+            }
+
+          }
+        
+        }
+
+        if (!has_made_changes) {
+          break;
+        }
+
+      }
+
+      console.log(`Rock ${rockIndex} collisions applied: ${num_tries}`);
+
+    }
+
     function onMouseDown(evt: MouseEvent) {
       const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
       for (let i = 0; i < rockImageTextures.length; i++) {
@@ -178,6 +241,7 @@ export default function WebGLCanvas({
           const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
+          applyRockCollisions(i);
         }
       }
     }
@@ -214,6 +278,7 @@ export default function WebGLCanvas({
           const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
+          applyRockCollisions(i);
         }
       }
     }
