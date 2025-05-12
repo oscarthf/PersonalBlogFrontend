@@ -41,8 +41,6 @@ export default function BlogPosts() {
 
     return (
         <>
-            <h1 className="page-title">Blog Posts</h1>
-
             {posts.map(p => (
                 <div key={p.id} className="post-card">
                     <h2 className="post-title">{p.title}</h2>
