@@ -1,4 +1,5 @@
 import SimWithDistanceField from "../components/SimWithDistanceField";
+import GeneralTextContainer from "../components/GeneralTextContainer";
 
 export default function About() {
     return (
@@ -23,8 +24,9 @@ export default function About() {
                 particleColor={[1.0, 1.0, 0.0]} // yellow
                 trailLineColor={[1.0, 1.0, 0.0]} // yellow
             />
-            <h1>About</h1>
-            <p>Oscar's Blog</p>
+            <div className="main_text_container">
+                <GeneralTextContainer section={"about"} />
+            </div>
         </div>
-    )
+    );
 }
