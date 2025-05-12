@@ -114,7 +114,7 @@ void main() {
   for (int rock_i = 0; rock_i < 4; rock_i++) {
 
     float dist = 0.0;
-    vec2 dir = vec2(0.0);
+    vec2 normal = vec2(0.0);
 
     float rock_x = 0.0;
     float rock_y = 0.0;
@@ -147,69 +147,48 @@ void main() {
       continue;
     }
 
-    vec2 scaled_rock_pos = pos;
-    scaled_rock_pos.x = (scaled_rock_pos.x - rock_x) / rock_width;
-    scaled_rock_pos.y = (scaled_rock_pos.y - rock_y) / rock_height;
+    vec2 scaled_rock_pos = vec2(
+      (pos.x - rock_x) / rock_width,
+      (pos.y - rock_y) / rock_height
+    );
 
-    bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0
-                        && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
+    bool isInsideRock = (scaled_rock_pos.x >= 0.25 && scaled_rock_pos.x <= 0.75// assume padding is 25%, image is square
+                        && scaled_rock_pos.y >= 0.25 && scaled_rock_pos.y <= 0.75);
+    
+    // bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0// assume padding is 25%, image is square
+    //                     && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
     
     if (isInsideRock) {
 
       if (rock_i == 0) {
         dist = texture(u_rockDistanceField_0, scaled_rock_pos).r;
-        dir.x = texture(u_rockDirXMap_0, scaled_rock_pos).r;
-        dir.y = texture(u_rockDirYMap_0, scaled_rock_pos).r;
+        normal.x = texture(u_rockDirXMap_0, scaled_rock_pos).r;
+        normal.y = texture(u_rockDirYMap_0, scaled_rock_pos).r;
       } else if (rock_i == 1) {
         dist = texture(u_rockDistanceField_1, scaled_rock_pos).r;
-        dir.x = texture(u_rockDirXMap_1, scaled_rock_pos).r;
-        dir.y = texture(u_rockDirYMap_1, scaled_rock_pos).r;
+        normal.x = texture(u_rockDirXMap_1, scaled_rock_pos).r;
+        normal.y = texture(u_rockDirYMap_1, scaled_rock_pos).r;
       } else if (rock_i == 2) {
         dist = texture(u_rockDistanceField_2, scaled_rock_pos).r;
-        dir.x = texture(u_rockDirXMap_2, scaled_rock_pos).r;
-        dir.y = texture(u_rockDirYMap_2, scaled_rock_pos).r;
+        normal.x = texture(u_rockDirXMap_2, scaled_rock_pos).r;
+        normal.y = texture(u_rockDirYMap_2, scaled_rock_pos).r;
       } else if (rock_i == 3) {
         dist = texture(u_rockDistanceField_3, scaled_rock_pos).r;
-        dir.x = texture(u_rockDirXMap_3, scaled_rock_pos).r;
-        dir.y = texture(u_rockDirYMap_3, scaled_rock_pos).r;
+        normal.x = texture(u_rockDirXMap_3, scaled_rock_pos).r;
+        normal.y = texture(u_rockDirYMap_3, scaled_rock_pos).r;
       }
 
       // === COLLISION WITH ROCK ===
 
-      vec2 normal = normalize(dir);
+      dist = dist * 2.0 - 1.0;
+      dist *= rock_width;
 
-      // if (dist < particle_radius * rock_width && length(normal) > 0.0) {
-      if (dist < 0.0 && length(normal) > 0.0) {
+      // if (dist < particle_radius && dist != 0.0) {
+      if (dist > 0.0) {
 
-        // get a better sample point
-        scaled_rock_pos += normal * 0.05;
-
-        if (rock_i == 0) {
-          dist = texture(u_rockDistanceField_0, scaled_rock_pos).r;
-          dir.x = texture(u_rockDirXMap_0, scaled_rock_pos).r;
-          dir.y = texture(u_rockDirYMap_0, scaled_rock_pos).r;
-        } else if (rock_i == 1) {
-          dist = texture(u_rockDistanceField_1, scaled_rock_pos).r;
-          dir.x = texture(u_rockDirXMap_1, scaled_rock_pos).r;
-          dir.y = texture(u_rockDirYMap_1, scaled_rock_pos).r;
-        } else if (rock_i == 2) {
-          dist = texture(u_rockDistanceField_2, scaled_rock_pos).r;
-          dir.x = texture(u_rockDirXMap_2, scaled_rock_pos).r;
-          dir.y = texture(u_rockDirYMap_2, scaled_rock_pos).r;
-        } else if (rock_i == 3) {
-          dist = texture(u_rockDistanceField_3, scaled_rock_pos).r;
-          dir.x = texture(u_rockDirXMap_3, scaled_rock_pos).r;
-          dir.y = texture(u_rockDirYMap_3, scaled_rock_pos).r;
-        }
-
-        normal = normalize(dir);
-
-        if (dist < 0.0 && length(normal) > 0.0) {
-
-          vel = reflect(vel, normal);
-          pos -= dir;
-
-        }
+        vel = reflect(vel, normal);
+        pos += normal * dist;
+        break;
 
       }
 

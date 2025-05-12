@@ -14,11 +14,11 @@ void main() {
   vec2 texelSize = 1.0 / u_resolution;
   float minDist = 1e10;
   vec2 bestOffset = vec2(0.0);
-  bool centerPixelWasBlack = true;
+  bool centerPixelWasTransparent = true;
 
   float center = texture(u_source, v_uv).a;
   if (center < 0.5) {
-    centerPixelWasBlack = false;
+    centerPixelWasTransparent = false;
   }
 
   float min_x_float = -float(u_radius) * texelSize.x + v_uv.x;
@@ -37,10 +37,10 @@ void main() {
   if (max_y_float > 1.0) {
     max_y_float = 1.0;
   }
-  int min_x = int((min_x_float - v_uv.x) / texelSize.x);
-  int min_y = int((min_y_float - v_uv.y) / texelSize.y);
-  int max_x = int((max_x_float - v_uv.x) / texelSize.x);
-  int max_y = int((max_y_float - v_uv.y) / texelSize.y);
+  int min_x = int((min_x_float - v_uv.x) * u_resolution.x);
+  int min_y = int((min_y_float - v_uv.y) * u_resolution.y);
+  int max_x = int((max_x_float - v_uv.x) * u_resolution.x);
+  int max_y = int((max_y_float - v_uv.y) * u_resolution.y);
 
   for (int dy = min_y; dy < max_y; dy++) {
     for (int dx = min_x; dx < max_x; dx++) {
@@ -55,9 +55,9 @@ void main() {
       vec2 sampleUV = v_uv + offset;
       float pixel = texture(u_source, sampleUV).a;
       bool samplePixelIsBlack = pixel < 0.5;
-      if ((centerPixelWasBlack && !samplePixelIsBlack) || 
-          (!centerPixelWasBlack && samplePixelIsBlack)) {
-        float dist = length(offset);
+      if ((centerPixelWasTransparent && !samplePixelIsBlack) || 
+          (!centerPixelWasTransparent && samplePixelIsBlack)) {
+        float dist = length(offset) * u_resolution.x;// assume square pixels
         if (dist < minDist) {
           minDist = dist;
           bestOffset = offset;
@@ -66,9 +66,14 @@ void main() {
     }
   }
 
-  if (centerPixelWasBlack) {
+  if (!centerPixelWasTransparent) {
     minDist = -minDist;
   }
+
+  minDist = minDist / 256.0;
+  minDist = (minDist + 1.0) / 2.0;
+
+  bestOffset = normalize(bestOffset);
   
   outDistance = minDist;
   outDirX = bestOffset.x;

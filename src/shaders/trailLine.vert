@@ -7,7 +7,7 @@ layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 
 uniform float u_maxDistance;
 uniform int u_bezierResolution;
-uniform float u_halfWidth;
+uniform float u_particleRadius;
 uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
 uniform float u_height_over_width;
@@ -160,8 +160,8 @@ void main() {
   vec2 normalized_prev_dir = normalize(prev_dir);
 
   vec2 p0 = curr;
-  vec2 p1 = curr - normalized_curr_dir * u_halfWidth;
-  vec2 p2 = prev + normalized_prev_dir * u_halfWidth;
+  vec2 p1 = curr - normalized_curr_dir * u_particleRadius;
+  vec2 p2 = prev + normalized_prev_dir * u_particleRadius;
   vec2 p3 = prev;
 
   float t = float(bezier_curve_index) / float(bezierCurveLength);
@@ -169,7 +169,7 @@ void main() {
   vec2 center = bezier(t, p0, p1, p2, p3);
   vec2 normal_dir = bezierDerivative(t, p0, p1, p2, p3);
   vec2 normal = normalize(vec2(-normal_dir.y, normal_dir.x));
-  vec2 offset = normal * a_corner * u_halfWidth;
+  vec2 offset = normal * a_corner * u_particleRadius;
 
   vec2 pos = center + offset;
 
