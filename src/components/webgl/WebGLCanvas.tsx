@@ -97,10 +97,14 @@ export default function WebGLCanvas({
   useEffect(() => {
 
     const rockAnimationOffsets = [];
+    const rockFloatingOffsets = [];
+    const rockIsFloatings = [];
 
     for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
       const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
       rockAnimationOffsets.push(animationOffset);
+      rockFloatingOffsets.push(0);
+      rockIsFloatings.push(true);
     }
 
     const particleTextureSize = Math.sqrt(particleCount);
@@ -138,7 +142,12 @@ export default function WebGLCanvas({
 
     const rockDraggings = []
     for (let i = 0; i < rockImageTextures.length; i++) {
-      rockDraggings.push({ current: false });
+      rockDraggings.push({ 
+        current: false,
+        hasMoved: false,
+        clickX: 0,
+        clickY: 0,
+      });
     }
 
     const rockOffsets = []
@@ -149,7 +158,98 @@ export default function WebGLCanvas({
     function clearRockDraggings() {
       for (let i = 0; i < rockDraggings.length; i++) {
         rockDraggings[i].current = false;
+        rockDraggings[i].hasMoved = false;
+        rockDraggings[i].clickX = 0;
+        rockDraggings[i].clickY = 0;
+        rockOffsets[i].x = 0;
+        rockOffsets[i].y = 0;
       }
+    }
+
+    function getRandomRockIndex() {
+      // Check all isFloating
+      let allRocksAreFloating = true;
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (!rockIsFloatings[i]) {
+          allRocksAreFloating = false;
+          break;
+        }
+      }
+
+      if (allRocksAreFloating) {
+        return -1;
+      }
+
+      // Check all which are not floating
+      const notFloatingRocks = [];
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (!rockIsFloatings[i]) {
+          notFloatingRocks.push(i);
+        }
+      }
+      const randomInnerIndex = Math.floor(Math.random() * notFloatingRocks.length);
+
+      const randomIndex = notFloatingRocks[randomInnerIndex];
+      return randomIndex;
+    }
+
+    function checkRockClick(clickX: number, clickY: number) {
+
+      console.log("checkRockClick");
+
+      let clickedRockIndex = -1;
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        const rock_x = rockXPositions[i];
+        const rock_y = rockYPositions[i];
+        const rock_width = rockWidths[i];
+        const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = clickX - rock_center_x;
+        const dy = clickY - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (
+          // clickX >= rock_x && clickX <= rock_x + rock_width &&
+          // clickY >= rock_y && clickY <= rock_y + rock_height
+          distance < rock_radius
+        ) {
+          clickedRockIndex = i;
+          break;
+        }
+      }
+
+      const rockIsFloating = rockIsFloatings[clickedRockIndex];
+
+      if (!rockIsFloating) {
+        // user doesnt see it
+        clickedRockIndex = -1;
+      }
+      
+      if (clickedRockIndex !== -1) {
+        console.log("clicked rock", clickedRockIndex);
+        // clicked a rock (which is floating)
+        if (rockDraggings[clickedRockIndex].hasMoved) {
+          // user moved the rock
+          console.log("user moved the rock");
+          return;
+        }
+        rockIsFloatings[clickedRockIndex] = false;
+      } else {
+        console.log("clicked empty space");
+        // did not click a rock
+        const randomRockIndex = getRandomRockIndex();// Tries to find a rock which is not floating, if none is found, it will return -1
+        if (randomRockIndex === -1) {
+          console.log("No rocks available to click");
+          return;
+        }
+        const newRockX = clickX - rockWidths[randomRockIndex] / 2;
+        const newRockY = clickY - rockHeights[randomRockIndex] / 2;
+        rockXPositions[randomRockIndex] = newRockX;
+        rockYPositions[randomRockIndex] = newRockY;
+        rockIsFloatings[randomRockIndex] = true;
+      }
+
     }
 
     function applyRockCollisions(rockIndex: number) {
@@ -222,14 +322,22 @@ export default function WebGLCanvas({
         const rock_y = rockYPositions[i];
         const rock_width = rockWidths[i];
         const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = x - rock_center_x;
+        const dy = y - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         if (
-          x >= rock_x && x <= rock_x + rock_width &&
-          y >= rock_y && y <= rock_y + rock_height
+          distance < rock_radius
         ) {
           clearRockDraggings();
           rockDraggings[i].current = true;
+          console.log("rockDraggings[i].current", rockDraggings[i].current);
           rockOffsets[i].x = x - rock_x;
           rockOffsets[i].y = y - rock_y;
+          rockDraggings[i].clickX = x;
+          rockDraggings[i].clickY = y;
           break;
         }
       }
@@ -238,6 +346,7 @@ export default function WebGLCanvas({
     function onMouseMove(evt: MouseEvent) {
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
+          rockDraggings[i].hasMoved = true;
           const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
@@ -246,7 +355,9 @@ export default function WebGLCanvas({
       }
     }
 
-    function onMouseUp() {
+    function onMouseUp(evt: MouseEvent) {
+      const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      checkRockClick(x, y);
       clearRockDraggings();
     }
 
@@ -258,14 +369,22 @@ export default function WebGLCanvas({
         const rock_y = rockYPositions[i];
         const rock_width = rockWidths[i];
         const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = x - rock_center_x;
+        const dy = y - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         if (
-          x >= rock_x && x <= rock_x + rock_width &&
-          y >= rock_y && y <= rock_y + rock_height
+          distance < rock_radius
         ) {
           clearRockDraggings();
           rockDraggings[i].current = true;
+          console.log("rockDraggings[i].current", rockDraggings[i].current);
           rockOffsets[i].x = x - rock_x;
           rockOffsets[i].y = y - rock_y;
+          rockDraggings[i].clickX = x;
+          rockDraggings[i].clickY = y;
           break;
         }
       }
@@ -275,6 +394,7 @@ export default function WebGLCanvas({
       evt.preventDefault();
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
+          rockDraggings[i].hasMoved = true;
           const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
@@ -283,7 +403,9 @@ export default function WebGLCanvas({
       }
     }
 
-    function onTouchEnd() {
+    function onTouchEnd(evt: TouchEvent) {
+      const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      checkRockClick(x, y);
       clearRockDraggings();
     }
 
@@ -307,6 +429,24 @@ export default function WebGLCanvas({
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+    }
+
+    function stepRocksFloating() {
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (rockIsFloatings[i] && rockFloatingOffsets[i] > 0.0) {
+          rockFloatingOffsets[i] -= 1 / 60;
+          console.log(`turning on rockFloatingOffsets['${i}']: `, rockFloatingOffsets[i]);
+          if (rockFloatingOffsets[i] < 0.0) {
+            rockFloatingOffsets[i] = 0.0;
+          }
+        } else if (!rockIsFloatings[i] && rockFloatingOffsets[i] < 1.0) {
+          rockFloatingOffsets[i] += 1 / 60;
+          console.log(`turning off rockFloatingOffsets['${i}']: `, rockFloatingOffsets[i]);
+          if (rockFloatingOffsets[i] > 1.0) {
+            rockFloatingOffsets[i] = 1.0;
+          }
+        }
+      }
     }
 
     function stepSimulation() {
@@ -467,6 +607,7 @@ export default function WebGLCanvas({
 
         let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rockFloatingOffset"), rockFloatingOffsets[rock_i]);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rockXPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rockYPositions[rock_i]);
@@ -556,7 +697,9 @@ export default function WebGLCanvas({
         fps = frames;
         frames = 0;
         lastTime = now;
-        console.log("FPS:", fps); // or use this value in a state update
+        if (frameNumber % 60 === 0) {
+          console.log("FPS:", fps); // or use this value in a state update
+        }
       }
 
     }
@@ -859,6 +1002,7 @@ export default function WebGLCanvas({
       preProcessParticles();
       stepSimulation();
       drawTrailsToBuffer();
+      stepRocksFloating();
 
       // Real render starts
 

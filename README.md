@@ -13,13 +13,12 @@ WebGL for background animation
 
 ```
 0. Add widescreen initial positions for rocks.
-1. Add feature: click rock to sink it, click background to float a new rock.
+1. Add particle sprite animation.
 2. Fix particle path visible when respawning.
 3. Add background textures.
 4. Add sun animation.
 5. Add moon animation.
 6. Improve particle sprites.
-7. Add particle sprite animation.
 ```
 
 ## Environment Variables needed:

@@ -5,6 +5,7 @@ in vec2 v_uv;
 in vec3 v_rockColor;
 in float v_animationFrame;
 in float v_animationType;
+in float v_rockFloatingOffset;
 
 uniform sampler2D u_imageTexture;
 uniform sampler2D u_distanceField;
@@ -28,7 +29,7 @@ void main() {
     distance = distance * 2.0 - 1.0;
     // distance *= 256.0;
 
-    if (distance < v_animationFrame) {
+    if (distance < v_animationFrame + v_rockFloatingOffset) {
     // if (distance < 0.5) {
       color = vec4(0.0, 0.0, 0.0, 0.0);
     }
