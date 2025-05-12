@@ -6,6 +6,9 @@ export default function About() {
         <div id="container">
             <SimWithDistanceField
                 animationType={2}
+                trailHistoryLength={2}
+                trailHistoryStepSize={2}
+                particleRadius={0.01}
                 repulseParticleRadius={100.0}
                 particleSpawnXMargin={0.0}
                 particleSpawnYMargin={0.3}

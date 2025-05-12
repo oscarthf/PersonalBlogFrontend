@@ -4,6 +4,9 @@ import WebGLCanvas from "./WebGLCanvas";
 
 interface SimWithDistanceFieldProps {
   animationType: number;
+  trailHistoryLength: number;
+  trailHistoryStepSize: number;
+  particleRadius: number;
   repulseParticleRadius: number;
   particleSpawnXMargin: number;
   particleSpawnYMargin: number;
@@ -25,6 +28,9 @@ interface SimWithDistanceFieldProps {
 
 export default function SimWithDistanceField({
   animationType,
+  trailHistoryLength,
+  trailHistoryStepSize,
+  particleRadius,
   repulseParticleRadius,
   particleSpawnXMargin,
   particleSpawnYMargin,
@@ -135,6 +141,9 @@ export default function SimWithDistanceField({
                   key={canvasKey}
                   gl={gl}
                   animationType={animationType}
+                  trailHistoryLength={trailHistoryLength}
+                  trailHistoryStepSize={trailHistoryStepSize}
+                  particleRadius={particleRadius}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
                   // windowHeight={(windowHeight - windowWidth * 0.07)}
