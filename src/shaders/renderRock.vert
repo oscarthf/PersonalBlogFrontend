@@ -5,12 +5,14 @@ precision highp float;
 out vec2 v_uv;
 out vec3 v_rockColor;
 out float v_animationFrame;
+out float v_animationType;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
 uniform float u_rock_width;
 uniform float u_rock_height;
 
+uniform int u_animationType;
 uniform int u_frameNumber;
 uniform float u_height_over_width;
 uniform vec3 u_rockColor;
@@ -25,6 +27,8 @@ vec2 getPos(int id) {
 }
 
 void main() {
+
+  v_animationType = float(u_animationType);
 
   int animationLength = 32 * 24;
 

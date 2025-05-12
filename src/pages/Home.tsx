@@ -4,6 +4,7 @@ function Home() {
     return (
     <div id="container">
         <SimWithDistanceField 
+            animationType={0}
             repulseParticleRadius={30.0}
             particleSpawnXMargin={0.0}
             particleSpawnYMargin={1.0}
