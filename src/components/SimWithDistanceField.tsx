@@ -43,6 +43,9 @@ export default function SimWithDistanceField({
   particleColor,
   trailLineColor,
 }: SimWithDistanceFieldProps) {
+  
+  const [navBarHeight, setNavBarHeight] = useState(0);
+  const [canvasHeight, setCanvasHeight] = useState(window.innerHeight); // Initialize to full height
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -63,6 +66,14 @@ export default function SimWithDistanceField({
 
   const handleResizeOrLoad = () => {
       console.log("Window resized or loaded");
+          
+      const nav = document.querySelector("nav");
+      const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+      setNavBarHeight(navHeight);
+
+      const newCanvasHeight = window.innerHeight - navHeight;
+      setCanvasHeight(newCanvasHeight);
+      
       setCanvasKey(prev => prev + 1); // This will force WebGLCanvas to unmount and remount
   };
 
@@ -126,7 +137,8 @@ export default function SimWithDistanceField({
                   animationType={animationType}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
-                  windowHeight={(windowHeight - windowWidth * 0.07)}
+                  // windowHeight={(windowHeight - windowWidth * 0.07)}
+                  windowHeight={canvasHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
