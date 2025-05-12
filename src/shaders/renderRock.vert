@@ -6,6 +6,7 @@ out vec2 v_uv;
 out vec3 v_rockColor;
 out float v_animationFrame;
 out float v_animationType;
+out float v_rockFloatingOffset;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
@@ -16,6 +17,7 @@ uniform int u_animationType;
 uniform int u_frameNumber;
 uniform float u_height_over_width;
 uniform vec3 u_rockColor;
+uniform float u_rockFloatingOffset;
 
 vec2 getPos(int id) {
   if (id == 0) return vec2(0.0, 0.0);
@@ -27,6 +29,8 @@ vec2 getPos(int id) {
 }
 
 void main() {
+
+  v_rockFloatingOffset = u_rockFloatingOffset;
 
   v_animationType = float(u_animationType);
 

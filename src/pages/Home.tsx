@@ -6,6 +6,9 @@ function Home() {
     <div id="container">
         <SimWithDistanceField 
             animationType={0}
+            trailHistoryLength={8}
+            trailHistoryStepSize={8}
+            particleRadius={0.04}
             repulseParticleRadius={30.0}
             particleSpawnXMargin={0.0}
             particleSpawnYMargin={1.0}

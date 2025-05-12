@@ -26,22 +26,18 @@ import {
 
 const MAX_WINDOW_DIMENSION = 640;
 
-const PARTICLE_QUAD_SIZE = 0.04; // size of the quad in normalized coordinates (0-1)
-
 const NUM_PARTICLE_FRAMES = 8;
 
 const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
-const MAX_TRAIL_BEZIER_SEGMENT_LENGTH = 0.5;
-
-const TRAIL_HISTORY_LENGTH = 8;
-const TRAIL_HISTORY_STEP_SIZE = 8;
-const REAL_TRAIL_HISTORY_LENGTH = (TRAIL_HISTORY_LENGTH + 1) * TRAIL_HISTORY_STEP_SIZE;
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
   animationType: number;
+  trailHistoryLength: number;
+  trailHistoryStepSize: number;
+  particleRadius: number;
   rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
@@ -70,6 +66,9 @@ interface WebGLCanvasProps {
 export default function WebGLCanvas({
   gl,
   animationType,
+  trailHistoryLength,
+  trailHistoryStepSize,
+  particleRadius,
   rockDistanceFields,
   windowWidth,
   windowHeight,
@@ -96,11 +95,19 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    // const particleRadius = 0.04; // size of the quad in normalized coordinates (0-1)
+
+    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+
     const rockAnimationOffsets = [];
+    const rockFloatingOffsets = [];
+    const rockIsFloatings = [];
 
     for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
       const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
       rockAnimationOffsets.push(animationOffset);
+      rockFloatingOffsets.push(0);
+      rockIsFloatings.push(true);
     }
 
     const particleTextureSize = Math.sqrt(particleCount);
@@ -138,7 +145,12 @@ export default function WebGLCanvas({
 
     const rockDraggings = []
     for (let i = 0; i < rockImageTextures.length; i++) {
-      rockDraggings.push({ current: false });
+      rockDraggings.push({ 
+        current: false,
+        hasMoved: false,
+        clickX: 0,
+        clickY: 0,
+      });
     }
 
     const rockOffsets = []
@@ -149,7 +161,161 @@ export default function WebGLCanvas({
     function clearRockDraggings() {
       for (let i = 0; i < rockDraggings.length; i++) {
         rockDraggings[i].current = false;
+        rockDraggings[i].hasMoved = false;
+        rockDraggings[i].clickX = 0;
+        rockDraggings[i].clickY = 0;
+        rockOffsets[i].x = 0;
+        rockOffsets[i].y = 0;
       }
+    }
+
+    function getRandomRockIndex() {
+      // Check all isFloating
+      let allRocksAreFloating = true;
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (!rockIsFloatings[i]) {
+          allRocksAreFloating = false;
+          break;
+        }
+      }
+
+      if (allRocksAreFloating) {
+        return -1;
+      }
+
+      // Check all which are not floating
+      const notFloatingRocks = [];
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (!rockIsFloatings[i]) {
+          notFloatingRocks.push(i);
+        }
+      }
+      const randomInnerIndex = Math.floor(Math.random() * notFloatingRocks.length);
+
+      const randomIndex = notFloatingRocks[randomInnerIndex];
+      return randomIndex;
+    }
+
+    function checkRockClick(clickX: number, clickY: number) {
+
+      console.log("checkRockClick");
+
+      let clickedRockIndex = -1;
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        const rock_x = rockXPositions[i];
+        const rock_y = rockYPositions[i];
+        const rock_width = rockWidths[i];
+        const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = clickX - rock_center_x;
+        const dy = clickY - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (
+          // clickX >= rock_x && clickX <= rock_x + rock_width &&
+          // clickY >= rock_y && clickY <= rock_y + rock_height
+          distance < rock_radius
+        ) {
+          clickedRockIndex = i;
+          break;
+        }
+      }
+
+      const rockIsFloating = rockIsFloatings[clickedRockIndex];
+
+      if (!rockIsFloating) {
+        // user doesnt see it
+        clickedRockIndex = -1;
+      }
+      
+      if (clickedRockIndex !== -1) {
+        console.log("clicked rock", clickedRockIndex);
+        // clicked a rock (which is floating)
+        if (rockDraggings[clickedRockIndex].hasMoved) {
+          // user moved the rock
+          console.log("user moved the rock");
+          return;
+        }
+        rockIsFloatings[clickedRockIndex] = false;
+      } else {
+        console.log("clicked empty space");
+        // did not click a rock
+        const randomRockIndex = getRandomRockIndex();// Tries to find a rock which is not floating, if none is found, it will return -1
+        if (randomRockIndex === -1) {
+          console.log("No rocks available to click");
+          return;
+        }
+        const newRockX = clickX - rockWidths[randomRockIndex] / 2;
+        const newRockY = clickY - rockHeights[randomRockIndex] / 2;
+        rockXPositions[randomRockIndex] = newRockX;
+        rockYPositions[randomRockIndex] = newRockY;
+        rockIsFloatings[randomRockIndex] = true;
+      }
+
+    }
+
+    function applyRockCollisions(rockIndex: number) {
+
+      // Rock is a square image, centered at 0.5 * rock_width, 0.5 * rock_height
+      // Rock radius is rock_width / 4
+
+      let num_tries = 0;
+
+      while (num_tries < 10) {
+        num_tries++;
+
+        let has_made_changes = false;
+
+        for (let j = 0; j < rockImageTextures.length; j++) {
+
+          const rock_width = rockWidths[j];
+          const rock_height = rockHeights[j];
+          const rock_x = rockXPositions[j] + rock_width / 2;
+          const rock_y = rockYPositions[j] + rock_height / 2;
+
+          const rock_radius = Math.max(rock_width, rock_height) / 4;
+
+          for (let i = 0; i < rockImageTextures.length; i++) {
+            if (i === j) continue;
+            if (i === rockIndex) continue;
+
+            const other_rock_width = rockWidths[i];
+            const other_rock_height = rockHeights[i];
+            const other_rock_x = rockXPositions[i] + other_rock_width / 2;
+            const other_rock_y = rockYPositions[i] + other_rock_height / 2;
+
+            const other_rock_radius = Math.max(other_rock_width, other_rock_height) / 4;
+            
+            const dx = other_rock_x - rock_x;
+            const dy = other_rock_y - rock_y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const min_distance = rock_radius + other_rock_radius;
+
+            if (distance < min_distance) {
+              const overlap = min_distance - distance;
+              const angle = Math.atan2(dy, dx);
+              const offsetX = Math.cos(angle) * overlap * 1.1;
+              const offsetY = Math.sin(angle) * overlap * 1.1;
+
+              rockXPositions[i] += offsetX;
+              rockYPositions[i] += offsetY;
+
+              has_made_changes = true;
+            }
+
+          }
+        
+        }
+
+        if (!has_made_changes) {
+          break;
+        }
+
+      }
+
+      console.log(`Rock ${rockIndex} collisions applied: ${num_tries}`);
+
     }
 
     function onMouseDown(evt: MouseEvent) {
@@ -159,14 +325,22 @@ export default function WebGLCanvas({
         const rock_y = rockYPositions[i];
         const rock_width = rockWidths[i];
         const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = x - rock_center_x;
+        const dy = y - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         if (
-          x >= rock_x && x <= rock_x + rock_width &&
-          y >= rock_y && y <= rock_y + rock_height
+          distance < rock_radius
         ) {
           clearRockDraggings();
           rockDraggings[i].current = true;
+          console.log("rockDraggings[i].current", rockDraggings[i].current);
           rockOffsets[i].x = x - rock_x;
           rockOffsets[i].y = y - rock_y;
+          rockDraggings[i].clickX = x;
+          rockDraggings[i].clickY = y;
           break;
         }
       }
@@ -175,14 +349,18 @@ export default function WebGLCanvas({
     function onMouseMove(evt: MouseEvent) {
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
+          rockDraggings[i].hasMoved = true;
           const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
+          applyRockCollisions(i);
         }
       }
     }
 
-    function onMouseUp() {
+    function onMouseUp(evt: MouseEvent) {
+      const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      checkRockClick(x, y);
       clearRockDraggings();
     }
 
@@ -194,14 +372,22 @@ export default function WebGLCanvas({
         const rock_y = rockYPositions[i];
         const rock_width = rockWidths[i];
         const rock_height = rockHeights[i];
+        const rock_center_x = rock_x + rock_width / 2;
+        const rock_center_y = rock_y + rock_height / 2;
+        const rock_radius = Math.max(rock_width, rock_height) / 4;
+        const dx = x - rock_center_x;
+        const dy = y - rock_center_y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         if (
-          x >= rock_x && x <= rock_x + rock_width &&
-          y >= rock_y && y <= rock_y + rock_height
+          distance < rock_radius
         ) {
           clearRockDraggings();
           rockDraggings[i].current = true;
+          console.log("rockDraggings[i].current", rockDraggings[i].current);
           rockOffsets[i].x = x - rock_x;
           rockOffsets[i].y = y - rock_y;
+          rockDraggings[i].clickX = x;
+          rockDraggings[i].clickY = y;
           break;
         }
       }
@@ -211,14 +397,18 @@ export default function WebGLCanvas({
       evt.preventDefault();
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
+          rockDraggings[i].hasMoved = true;
           const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
+          applyRockCollisions(i);
         }
       }
     }
 
-    function onTouchEnd() {
+    function onTouchEnd(evt: TouchEvent) {
+      const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      checkRockClick(x, y);
       clearRockDraggings();
     }
 
@@ -242,6 +432,24 @@ export default function WebGLCanvas({
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+    }
+
+    function stepRocksFloating() {
+      for (let i = 0; i < rockImageTextures.length; i++) {
+        if (rockIsFloatings[i] && rockFloatingOffsets[i] > 0.0) {
+          rockFloatingOffsets[i] -= 1 / 60;
+          console.log(`turning on rockFloatingOffsets['${i}']: `, rockFloatingOffsets[i]);
+          if (rockFloatingOffsets[i] < 0.0) {
+            rockFloatingOffsets[i] = 0.0;
+          }
+        } else if (!rockIsFloatings[i] && rockFloatingOffsets[i] < 1.0) {
+          rockFloatingOffsets[i] += 1 / 60;
+          console.log(`turning off rockFloatingOffsets['${i}']: `, rockFloatingOffsets[i]);
+          if (rockFloatingOffsets[i] > 1.0) {
+            rockFloatingOffsets[i] = 1.0;
+          }
+        }
+      }
     }
 
     function stepSimulation() {
@@ -313,12 +521,12 @@ export default function WebGLCanvas({
       gl.viewport(0, 0, canvasSizeWidth, canvasSizeHeight);
 
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
-      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
+      gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), trailHistoryLength);
       gl.uniform3f(gl.getUniformLocation(trailLineProgram, "u_trailLineColor"), trailLineColor[0], trailLineColor[1], trailLineColor[2]);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % trailHistoryStepSize) / trailHistoryStepSize);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), PARTICLE_QUAD_SIZE);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), particleRadius);
       
       ///////////
 
@@ -327,19 +535,19 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animationOffsets"), 0);
 
       // Just wrote onto currentWriteIndex
-      for (let i = 0; i < TRAIL_HISTORY_LENGTH; i++) {
+      for (let i = 0; i < trailHistoryLength; i++) {
         // TODO: reduce step size at low FPS!!!
         let texIndex = currentWriteIndex;
 
         if (0) {
-          texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+          texIndex = (currentWriteIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
         } else {
-          if (i == TRAIL_HISTORY_LENGTH - 1) {
-            texIndex = (currentWriteIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+          if (i == trailHistoryLength - 1) {
+            texIndex = (currentWriteIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
           } else if (i != 0) {
-            const texIndexRemainder = currentWriteIndex % TRAIL_HISTORY_STEP_SIZE;
-            const realWriteStartIndex = currentWriteIndex - texIndexRemainder + TRAIL_HISTORY_STEP_SIZE;
-            texIndex = (realWriteStartIndex - i * TRAIL_HISTORY_STEP_SIZE + REAL_TRAIL_HISTORY_LENGTH) % REAL_TRAIL_HISTORY_LENGTH;
+            const texIndexRemainder = currentWriteIndex % trailHistoryStepSize;
+            const realWriteStartIndex = currentWriteIndex - texIndexRemainder + trailHistoryStepSize;
+            texIndex = (realWriteStartIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
           }
         
         }
@@ -363,7 +571,7 @@ export default function WebGLCanvas({
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       
-      gl.drawArrays(gl.TRIANGLES, 0, particleCount * (TRAIL_HISTORY_LENGTH - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
+      gl.drawArrays(gl.TRIANGLES, 0, particleCount * (trailHistoryLength - 1) * 6 * (BEZIER_CURVE_RESOLUTION - 1));
 
       gl.disable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -402,6 +610,7 @@ export default function WebGLCanvas({
 
         let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rockFloatingOffset"), rockFloatingOffsets[rock_i]);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rockXPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rockYPositions[rock_i]);
@@ -443,7 +652,7 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_sprite"), 2);
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), particleTextureSize);
-      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), particleRadius);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
@@ -491,7 +700,9 @@ export default function WebGLCanvas({
         fps = frames;
         frames = 0;
         lastTime = now;
-        console.log("FPS:", fps); // or use this value in a state update
+        if (frameNumber % 60 === 0) {
+          console.log("FPS:", fps); // or use this value in a state update
+        }
       }
 
     }
@@ -504,7 +715,7 @@ export default function WebGLCanvas({
         trailSegments
        } = createTrailIndicesAndCorners(particleCount, 
                                         particleTextureSize,
-                                        TRAIL_HISTORY_LENGTH,
+                                        trailHistoryLength,
                                         BEZIER_CURVE_RESOLUTION);
 
       const trailIndexBuffer = gl.createBuffer()!;
@@ -579,7 +790,7 @@ export default function WebGLCanvas({
 
     function setupParticleVertices(size: number) {
       
-      const quadVerts = createParticleVertices(PARTICLE_QUAD_SIZE);
+      const quadVerts = createParticleVertices(particleRadius);
 
       const quadVBO = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
@@ -647,7 +858,7 @@ export default function WebGLCanvas({
       const texList = [];
       const fbList = [];
 
-      for (let i = 0; i < REAL_TRAIL_HISTORY_LENGTH; i++) {
+      for (let i = 0; i < realTrailHistoryLength; i++) {
         const tex = gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, particleData);
@@ -777,7 +988,7 @@ export default function WebGLCanvas({
     const { 
       quadVBO, 
       spriteVAO
-    } = setupParticleVertices(PARTICLE_QUAD_SIZE);
+    } = setupParticleVertices(particleRadius);
     let { 
       offsetsTex: animationOffsetsTex,
       texList: readWriteTexList,
@@ -794,6 +1005,7 @@ export default function WebGLCanvas({
       preProcessParticles();
       stepSimulation();
       drawTrailsToBuffer();
+      stepRocksFloating();
 
       // Real render starts
 
