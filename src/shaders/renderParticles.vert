@@ -22,7 +22,7 @@ float atantwo(float y, float x) {
   if (x < 0.0 && y < 0.0) return atan(y, x) - 3.14159265358979323846;
   if (x == 0.0 && y > 0.0) return 1.57079632679489661923;
   if (x == 0.0 && y < 0.0) return -1.57079632679489661923;
-  return 0.0; // undefined
+  return 0.0;// undefined
 }
 
 void main() {
@@ -40,14 +40,11 @@ void main() {
   mat2 rotation = mat2(c, -s, s, c);
   vec2 rotatedQuad = rotation * a_quadPos;
 
-  // rescale pos and vel to 0 to 1 on the y axis
   pos.y /= u_height_over_width;
   
-  // UV mapping
   v_uv = ((a_quadPos / u_particle_radius) + 1.0) * 0.5;
 
   v_particleColor = u_particleColor;
 
-  // Final position
   gl_Position = vec4(pos * 2.0 - 1.0 + rotatedQuad, 0.0, 1.0);
 }
