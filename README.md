@@ -40,11 +40,29 @@ VITE_API_BASE_URL="/api"
 ## For Local Deployment (With Docker):
 
 ```
+0. Clone this repo using the command:
+    git clone https://github.com/oscarthf/PersonalBlogFrontend
+1. Navigate to the root folder of the repo using the command:
+    cd PersonalBlogFrontend
+2. Build the container using the command:
+    docker build -t personal-blog-frontend .
+3. Run the container using the command:
+    docker run -p 3000:3000 personal-blog-frontend
+4. Open your browser and go to http://localhost:3000
 ```
 
 ## For Local Deployment (No Docker):
 
 ```
+0. Clone this repo using the command:
+    git clone https://github.com/oscarthf/PersonalBlogFrontend
+1. Navigate to the root folder of the repo using the command:
+    cd PersonalBlogFrontend
+2. Install the dependencies using the command:
+    npm install
+3. Run the app using the command:
+    npm run dev
+4. Open your browser and go to http://localhost:3000
 ```
 
 ## Image sources:
