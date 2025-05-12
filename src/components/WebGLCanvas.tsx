@@ -44,6 +44,7 @@ interface WebGLCanvasProps {
   rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
+  particleSpawnXMargin: number;
   particleSpawnYMargin: number;
   repulse_force: number;
   friction: number;
@@ -70,6 +71,7 @@ export default function WebGLCanvas({
   rockDistanceFields,
   windowWidth,
   windowHeight,
+  particleSpawnXMargin,
   particleSpawnYMargin,
   repulse_force,
   friction,
@@ -278,8 +280,9 @@ export default function WebGLCanvas({
 
       }
 
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_particle_radius"), (PARTICLE_QUAD_SIZE / 2) * canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnXMargin"), particleSpawnXMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeHeight"), canvasSizeHeight);
@@ -300,7 +303,6 @@ export default function WebGLCanvas({
 
       gl.viewport(0, 0, canvasSizeWidth, canvasSizeHeight);
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
       gl.uniform3f(gl.getUniformLocation(trailLineProgram, "u_trailLineColor"), trailLineColor[0], trailLineColor[1], trailLineColor[2]);
@@ -621,6 +623,7 @@ export default function WebGLCanvas({
 
       const particleData = createInitialParticleData(particleTextureSize,
                                                      CANVAS_HEIGHT_OVER_WIDTH,
+                                                     particleSpawnXMargin,
                                                      particleSpawnYMargin);
 
       const texList = [];

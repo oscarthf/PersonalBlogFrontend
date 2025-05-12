@@ -34,8 +34,9 @@ uniform float u_repulse_force;
 uniform float u_particleTextureSize;
 uniform float u_canvasSizeWidth;
 uniform float u_canvasSizeHeight;
+uniform float u_height_over_width;
+uniform float u_spawnXMargin;
 uniform float u_spawnYMargin;
-uniform float u_particle_radius;
 uniform float u_repulse_particle_radius;
 
 // up to 3 "rocks"
@@ -82,20 +83,18 @@ void main() {
 
   float repulse_force = u_repulse_force;
 
-  // Compute own index from UV
-  
   ivec2 fragIndex = ivec2(floor(v_uv * u_particleTextureSize));
   vec4 self = readParticle(fragIndex);
 
   vec2 pos = self.xy;
   vec2 vel = self.zw;
-  
-  // === SCALE TO IMAGE SIZE
 
-  float particle_radius = u_particle_radius;
+  // === SCALE TO IMAGE SIZE
 
   pos.x *= u_canvasSizeWidth;
   pos.y *= u_canvasSizeWidth;
+  vel.x *= u_canvasSizeWidth;
+  vel.y *= u_canvasSizeWidth;
 
   // === GRAVITY ===
 
@@ -108,8 +107,6 @@ void main() {
   }
 
   // === ROCK BOUNDING BOX ===
-
-  // TODO: Add particle radius to collision detection
 
   for (int rock_i = 0; rock_i < 4; rock_i++) {
 
@@ -337,32 +334,38 @@ void main() {
 
   pos += vel;
 
-  // === BOUNDING BOX ===
-  
-  pos.x = mod(mod(pos.x, u_canvasSizeWidth) + u_canvasSizeWidth, u_canvasSizeWidth);
-
-  if (u_gravity == 0.0) {
-    pos.y = mod(mod(pos.y, u_canvasSizeHeight) + u_canvasSizeHeight, u_canvasSizeHeight);
-  } else if (u_gravity > 0.0) {
-    if (pos.y < -u_spawnYMargin * u_canvasSizeHeight) {
-      pos.y = float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin);
-      // set pos x to a random value between 0 and canvas size
-      // TODO: Use a different seed for this
-      pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
-    }
-  } else {
-    if (pos.y > float(u_canvasSizeHeight) * (1.0 + u_spawnYMargin)) {
-      pos.y = -u_spawnYMargin * u_canvasSizeHeight;
-      // set pos x to a random value between 0 and canvas size
-      // TODO: Use a different seed for this
-      pos.x = rand(vec2(pos.x, pos.y)) * u_canvasSizeWidth;
-    }
-  }
-
   // === SCALE BACK TO 0 - 1
 
   pos.x /= u_canvasSizeWidth;
   pos.y /= u_canvasSizeWidth;
+  vel.x /= u_canvasSizeWidth;
+  vel.y /= u_canvasSizeWidth;
+
+  // === BOUNDING BOX ===
+
+  if (pos.x < -u_spawnXMargin) {
+    pos.x = (1.0 + u_spawnXMargin);
+    if (u_gravity != 0.0) {
+      pos.y = rand(vec2(pos.x, pos.y));
+    }
+  } else if (pos.x > (1.0 + u_spawnXMargin)) {
+    pos.x = -u_spawnXMargin;
+    if (u_gravity != 0.0) {
+      pos.y = rand(vec2(pos.x, pos.y));
+    }
+  }
+
+  if (pos.y < -u_spawnYMargin) {
+    pos.y = (u_height_over_width + u_spawnYMargin);
+    if (u_gravity != 0.0) {
+      pos.x = rand(vec2(pos.x, pos.y));
+    }
+  } else if (pos.y > (u_height_over_width + u_spawnYMargin)) {
+    pos.y = -u_spawnYMargin;
+    if (u_gravity != 0.0) {
+      pos.x = rand(vec2(pos.x, pos.y));
+    }
+  }
 
   outColor = vec4(pos, vel);
   
