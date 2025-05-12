@@ -180,3 +180,23 @@ nav {
     background-color: #2c4db3;
 }
   
+
+a {
+    color: #555; /* medium gray */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease, border-bottom 0.2s ease;
+}
+
+a:hover {
+    color: #222; /* darker on hover */
+    border-bottom: 1px solid #999; /* subtle underline on hover */
+}
+
+a:visited {
+    color: #777;
+}
+
+a:active {
+    color: #000;
+}
