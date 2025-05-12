@@ -5,9 +5,8 @@ layout(location = 0) in vec2 a_index;
 layout(location = 1) in float a_corner; // -1.0 or +1.0
 layout(location = 2) in float a_segment; // 0.0 = prev, 1.0 = curr
 
-uniform float u_maxDistance;
 uniform int u_bezierResolution;
-uniform float u_halfWidth;
+uniform float u_particleRadius;
 uniform int u_frameNumber;
 uniform int u_trailHistoryLength;
 uniform float u_height_over_width;
@@ -128,29 +127,40 @@ void main() {
   vec2 curr = curr_full.xy;
   vec2 prev = prev_full.xy;
 
-  // rescale to 0 to 1 on y axis
   curr.y /= u_height_over_width;
   prev.y /= u_height_over_width;
 
   vec2 delta = curr - prev;
   float delta_mag = length(delta);
 
-  vec2 curr_direction = normalize(curr_full.zw);
-  vec2 prev_direction = normalize(prev_full.zw);
+  vec2 curr_vel = curr_full.zw;
+  vec2 prev_vel = prev_full.zw;
 
-  // rescale to 0 to 1 on y axis
-  curr_direction.y /= u_height_over_width;
-  prev_direction.y /= u_height_over_width;
+  vec2 curr_direction = normalize(curr_vel);
+  vec2 prev_direction = normalize(prev_vel);
 
   vec2 curr_dir = curr_direction * delta_mag;
   vec2 prev_dir = prev_direction * delta_mag;
 
-  float len2 = dot(curr_dir, curr_dir);
+  bool curr_is_out_of_bounds = false;
+  bool prev_is_out_of_bounds = false;
+  bool curr_dir_is_zero = false;
 
-  float maxLen2 = u_maxDistance * u_maxDistance;
+  if (curr_dir.x == 0.0 && curr_dir.y == 0.0) {
+    curr_dir_is_zero = true;
+  }
 
-  // if (len2 > maxLen2 || len2 == 0.0 || (curr_dir.y > 0.0 && curr_dir.y > u_maxDistance * 0.5)) {
-  if (len2 > maxLen2 || len2 == 0.0) {
+  if (curr.x <= 0.0 || curr.x >= 1.0 ||
+      curr.y <= 0.0 || curr.y >= 1.0) {
+    curr_is_out_of_bounds = true;
+  }
+
+  if (prev.x <= 0.0 || prev.x >= 1.0 ||
+      prev.y <= 0.0 || prev.y >= 1.0) {
+    prev_is_out_of_bounds = true;
+  }
+
+  if (curr_dir_is_zero || (curr_is_out_of_bounds && prev_is_out_of_bounds)) {
     v_animationLength = 0.0;
     gl_Position = vec4(2.0, 2.0, 0.0, 0.0);
     return;
@@ -160,8 +170,8 @@ void main() {
   vec2 normalized_prev_dir = normalize(prev_dir);
 
   vec2 p0 = curr;
-  vec2 p1 = curr - normalized_curr_dir * u_halfWidth;
-  vec2 p2 = prev + normalized_prev_dir * u_halfWidth;
+  vec2 p1 = curr - normalized_curr_dir * u_particleRadius;
+  vec2 p2 = prev + normalized_prev_dir * u_particleRadius;
   vec2 p3 = prev;
 
   float t = float(bezier_curve_index) / float(bezierCurveLength);
@@ -169,7 +179,7 @@ void main() {
   vec2 center = bezier(t, p0, p1, p2, p3);
   vec2 normal_dir = bezierDerivative(t, p0, p1, p2, p3);
   vec2 normal = normalize(vec2(-normal_dir.y, normal_dir.x));
-  vec2 offset = normal * a_corner * u_halfWidth;
+  vec2 offset = normal * a_corner * u_particleRadius;
 
   vec2 pos = center + offset;
 

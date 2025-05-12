@@ -41,9 +41,11 @@ const BEZIER_CURVE_RESOLUTION = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
+  animationType: number;
   rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
+  particleSpawnXMargin: number;
   particleSpawnYMargin: number;
   repulse_force: number;
   friction: number;
@@ -67,9 +69,11 @@ interface WebGLCanvasProps {
 
 export default function WebGLCanvas({
   gl,
+  animationType,
   rockDistanceFields,
   windowWidth,
   windowHeight,
+  particleSpawnXMargin,
   particleSpawnYMargin,
   repulse_force,
   friction,
@@ -91,6 +95,13 @@ export default function WebGLCanvas({
   repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
+
+    const rockAnimationOffsets = [];
+
+    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
+      rockAnimationOffsets.push(animationOffset);
+    }
 
     const particleTextureSize = Math.sqrt(particleCount);
 
@@ -278,8 +289,9 @@ export default function WebGLCanvas({
 
       }
 
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_particle_radius"), PARTICLE_QUAD_SIZE);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnXMargin"), particleSpawnXMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeHeight"), canvasSizeHeight);
@@ -300,14 +312,13 @@ export default function WebGLCanvas({
 
       gl.viewport(0, 0, canvasSizeWidth, canvasSizeHeight);
 
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_maxDistance"), MAX_TRAIL_BEZIER_SEGMENT_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), TRAIL_HISTORY_LENGTH);
       gl.uniform3f(gl.getUniformLocation(trailLineProgram, "u_trailLineColor"), trailLineColor[0], trailLineColor[1], trailLineColor[2]);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % TRAIL_HISTORY_STEP_SIZE) / TRAIL_HISTORY_STEP_SIZE);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_halfWidth"), PARTICLE_QUAD_SIZE * 0.5);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), PARTICLE_QUAD_SIZE);
       
       ///////////
 
@@ -380,9 +391,18 @@ export default function WebGLCanvas({
         }
   
         gl.bindVertexArray(fullscreenVAO);
-        gl.activeTexture(gl.TEXTURE4);
+
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, rockImageTexture);
-        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_mask"), 4);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_imageTexture"), 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_distanceField"), 1);
+
+        let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rockXPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rockYPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_width"), rockWidths[rock_i]);
@@ -621,6 +641,7 @@ export default function WebGLCanvas({
 
       const particleData = createInitialParticleData(particleTextureSize,
                                                      CANVAS_HEIGHT_OVER_WIDTH,
+                                                     particleSpawnXMargin,
                                                      particleSpawnYMargin);
 
       const texList = [];

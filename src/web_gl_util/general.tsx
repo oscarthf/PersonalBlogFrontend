@@ -152,10 +152,11 @@ export const createParticleVertices = (sprite_quad_size: number) => {
 
 export const createInitialParticleData = (size: number,
                                           height_over_width: number,
+                                          x_margin: number,
                                           y_margin: number): Float32Array => {
     const data = new Float32Array(size * size * 4);
     for (let i = 0; i < size * size; i++) {
-        const x = Math.random();
+        const x = Math.random() * ((1 + 2 * x_margin) - x_margin);
         const y = Math.random() * ((1 + 2 * y_margin) - y_margin) * height_over_width;
         const random_angle = Math.random() * Math.PI / 8 - Math.PI / 16;
         const vx = Math.sin(random_angle) * 0.01;
