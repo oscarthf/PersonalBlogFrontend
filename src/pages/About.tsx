@@ -4,6 +4,7 @@ export default function About() {
     return (
         <div id="container">
             <SimWithDistanceField
+                animationType={2}
                 repulseParticleRadius={100.0}
                 particleSpawnXMargin={0.0}
                 particleSpawnYMargin={0.3}

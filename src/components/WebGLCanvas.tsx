@@ -41,6 +41,7 @@ const BEZIER_CURVE_RESOLUTION = 4;
 
 interface WebGLCanvasProps {
   gl: WebGL2RenderingContext;
+  animationType: number;
   rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
@@ -68,6 +69,7 @@ interface WebGLCanvasProps {
 
 export default function WebGLCanvas({
   gl,
+  animationType,
   rockDistanceFields,
   windowWidth,
   windowHeight,
@@ -398,7 +400,9 @@ export default function WebGLCanvas({
         gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_distanceField"), 1);
 
-        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH);
+        let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rockXPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rockYPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_width"), rockWidths[rock_i]);
