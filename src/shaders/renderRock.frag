@@ -3,16 +3,32 @@ precision highp float;
 
 in vec2 v_uv;
 in vec3 v_rockColor;
-uniform sampler2D u_mask;
+in float v_animationFrame;
+
+uniform sampler2D u_imageTexture;
+uniform sampler2D u_distanceField;
 
 out vec4 outColor;
 
 void main() {
-  // float v = texture(u_mask, v_uv);
+  // float v = texture(u_imageTexture, v_uv);
   // if (v > 0.5) {
   //   outColor = vec4(0.0, 0.0, 0.0, 0.0);
   // } else {
   //   outColor = vec4(v_rockColor, 1.0);
   // }
-  outColor = texture(u_mask, v_uv);
+
+  vec4 color = texture(u_imageTexture, v_uv);
+  float distance = texture(u_distanceField, v_uv).r;
+
+  distance = distance * 2.0 - 1.0;
+  // distance *= 256.0;
+
+  if (distance < v_animationFrame) {
+  // if (distance < 0.5) {
+    color = vec4(0.0, 0.0, 0.0, 0.0);
+  }
+
+  outColor = color;
+
 }

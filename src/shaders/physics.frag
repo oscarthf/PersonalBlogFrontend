@@ -178,6 +178,7 @@ void main() {
       // === COLLISION WITH ROCK ===
 
       dist = dist * 2.0 - 1.0;
+      normal = normal * 2.0 - 1.0;
       dist *= rock_width;
 
       // if (dist < particle_radius && dist != 0.0) {

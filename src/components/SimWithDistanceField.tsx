@@ -43,6 +43,7 @@ export default function SimWithDistanceField({
 }: SimWithDistanceFieldProps) {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [canvasKey, setCanvasKey] = useState(0);
   const [gl, setGL] = useState<WebGL2RenderingContext | null>(null);
   const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
   const [textures, setDistanceFieldTextures] = useState<{
@@ -58,25 +59,22 @@ export default function SimWithDistanceField({
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
 
-  // const handleResizeOrLoad = () => {
-  //     console.log("Window resized or loaded");
-  //     // Your resize/load logic here (e.g., update canvas size)
-  // };
+  const handleResizeOrLoad = () => {
+      console.log("Window resized or loaded");
+      setCanvasKey(prev => prev + 1); // This will force WebGLCanvas to unmount and remount
+  };
 
-  // useEffect(() => {
-  //     // Call once on mount (load)
-  //     handleResizeOrLoad();
+  useEffect(() => {
+      handleResizeOrLoad(); // Call once on mount
 
-  //     // Add event listeners
-  //     window.addEventListener("resize", handleResizeOrLoad);
-  //     window.addEventListener("load", handleResizeOrLoad);
+      window.addEventListener("resize", handleResizeOrLoad);
+      window.addEventListener("load", handleResizeOrLoad);
 
-  //     // Cleanup on unmount
-  //     return () => {
-  //         window.removeEventListener("resize", handleResizeOrLoad);
-  //         window.removeEventListener("load", handleResizeOrLoad);
-  //     };
-  // }, []);
+      return () => {
+          window.removeEventListener("resize", handleResizeOrLoad);
+          window.removeEventListener("load", handleResizeOrLoad);
+      };
+  }, []);
 
   useEffect(() => {
     if (canvasRef.current && !gl) {
@@ -121,6 +119,7 @@ export default function SimWithDistanceField({
             ))}
 
               <WebGLCanvas
+                  key={canvasKey}
                   gl={gl}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}

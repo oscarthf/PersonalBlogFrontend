@@ -94,6 +94,13 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    const rockAnimationOffsets = [];
+
+    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
+      rockAnimationOffsets.push(animationOffset);
+    }
+
     const particleTextureSize = Math.sqrt(particleCount);
 
     let lastFrameTime = 0;
@@ -382,9 +389,16 @@ export default function WebGLCanvas({
         }
   
         gl.bindVertexArray(fullscreenVAO);
-        gl.activeTexture(gl.TEXTURE4);
+
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, rockImageTexture);
-        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_mask"), 4);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_imageTexture"), 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_distanceField"), 1);
+
+        gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_x"), rockXPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_y"), rockYPositions[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_width"), rockWidths[rock_i]);
