@@ -13,7 +13,7 @@ nav {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: sticky; /* Keep it visible on scroll */
+    position: sticky;
     top: 0;
     z-index: 10;
 }
@@ -77,40 +77,23 @@ nav {
 }
 
 #sim_container {
-    /* position: absolute; */
-    /* z-index: 0; */
     top: 0;
     left: 0;
     height: 0;
     width: 0;
-    /* width: 100vw;
-    height: 100vh; */
 }
 
 #page_container {
     position: absolute;
-    /* max-width: 800px; */
-    /* margin: 0 auto; */
-    /* padding: 2rem; */
 }
-/* 
 .main_text_container {
     position: absolute;
     top: 0;
     left: 0;
-    background-color: rgba(256, 256, 256, 0.5);
-} 
-*/
-
-.main_text_container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(255, 255, 255, 0.8); /* Fixed incorrect rgba values */
+    background-color: rgba(255, 255, 255, 0.6);
     width: 100vw;
-    /* padding: 1rem 2rem; */
     text-align: center;
-    backdrop-filter: blur(4px); /* Adds a subtle blur for modern look */
+    backdrop-filter: blur(4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -123,8 +106,8 @@ nav {
 
 
 .card {
-    background: white;
-    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 1rem 0;
     margin-bottom: 1rem;
     border-radius: 8px;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
@@ -138,8 +121,9 @@ nav {
 }
 
 .post-card {
-    background: white;
-    padding: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(4px);
+    padding: 1.5rem 0;
     margin-bottom: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -182,15 +166,15 @@ nav {
   
 
 a {
-    color: #555; /* medium gray */
+    color: #555;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease, border-bottom 0.2s ease;
 }
 
 a:hover {
-    color: #222; /* darker on hover */
-    border-bottom: 1px solid #999; /* subtle underline on hover */
+    color: #222;
+    border-bottom: 1px solid #999;
 }
 
 a:visited {

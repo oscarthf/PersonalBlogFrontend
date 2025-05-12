@@ -1,5 +1,5 @@
-import SimWithDistanceField from "../components/SimWithDistanceField";
-import GeneralTextContainer from "../components/GeneralTextContainer";
+import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 export default function About() {
     return (
@@ -13,9 +13,9 @@ export default function About() {
                 friction={1.0}
                 gravity={0.0}
                 particleCount={81}
-                particleImageSource="/star.png"
+                particleImageSource="/sprites/star.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
-                rockImageSources={["/moon.png"]}
+                rockImageSources={["/sprites/moon.png"]}
                 rockXPositions={[0.4]}
                 rockYPositions={[0.4]}
                 rockWidths={[0.2]}

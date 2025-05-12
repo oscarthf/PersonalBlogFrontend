@@ -1,5 +1,5 @@
-import SimWithDistanceField from "../components/SimWithDistanceField";
-import GeneralTextContainer from "../components/GeneralTextContainer";
+import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 function Home() {
     return (
@@ -13,9 +13,9 @@ function Home() {
             friction={0.9}
             gravity={0.8}
             particleCount={49}
-            particleImageSource="/wave.png"
+            particleImageSource="/sprites/wave.png"
             rockColor={[165/256, 42/256, 42/256]} // brown
-            rockImageSources={["/opal_0.png", "/opal_1.png", "/opal_2.png", "/opal_3.png"]}
+            rockImageSources={["/sprites/opal_0.png", "/sprites/opal_1.png", "/sprites/opal_2.png", "/sprites/opal_3.png"]}
             rockXPositions={[0.4, 0.3, 0.6, 0.8]}
             rockYPositions={[1.0, 0.5, 0.7, 0.33]}
             rockWidths={[0.3, 0.22, 0.28, 0.15]}

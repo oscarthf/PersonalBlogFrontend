@@ -1,6 +1,6 @@
-import SimWithDistanceField from "../components/SimWithDistanceField";
-import GeneralTextContainer from "../components/GeneralTextContainer";
-import BlogPosts from "../components/BlogPosts";
+import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import GeneralTextContainer from "../components/notion/GeneralTextContainer";
+import BlogPosts from "../components/notion/BlogPosts";
 
 export default function Blog() {
     return (
@@ -14,9 +14,9 @@ export default function Blog() {
                 friction={0.9}
                 gravity={-0.2}
                 particleCount={25}
-                particleImageSource="/cloud.png"
+                particleImageSource="/sprites/cloud.png"
                 rockColor={[1.0, 1.0, 0.0]}
-                rockImageSources={["/sun.png"]}
+                rockImageSources={["/sprites/sun.png"]}
                 rockXPositions={[0.4]}
                 rockYPositions={[0.4]}
                 rockWidths={[0.2]}
