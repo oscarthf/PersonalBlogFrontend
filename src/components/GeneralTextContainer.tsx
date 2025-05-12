@@ -7,14 +7,6 @@ export default function GeneralTextContainer({ section }: { section: Section }) 
     const [htmlContent, setHtmlContent] = useState<string>("");
     const [loading, setLoading] = useState(true);
 
-    // const contentClickHandler = (e) => {
-    //     const targetLink = e.target.closest('a');
-    //     if(!targetLink) return;
-    //     e.preventDefault();
-        
-    //     console.log(targetLink.href); // this.props.history.push(e.target.href)
-    // };
-
     const loadContent = async () => {
         setLoading(true);
         try {
@@ -39,9 +31,7 @@ export default function GeneralTextContainer({ section }: { section: Section }) 
             {loading ? (
                 <p>Loading...</p>
             ) : (
-                <div
-                    // onClick={this.contentClickHandler} 
-                    dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
             )}
         </div>
     );
