@@ -17,7 +17,7 @@ void main() {
   
   vec4 color = texture(u_imageTexture, v_uv);
   
-  if (v_animationType == 0) {
+  if (v_animationType == 0.0) {
 
     float distance = texture(u_distanceField, v_uv).r;
 
