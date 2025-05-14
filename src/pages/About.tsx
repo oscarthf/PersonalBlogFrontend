@@ -19,8 +19,8 @@ export default function About() {
                 particleImageSource="/sprites/star.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
                 rockImageSources={["/sprites/moon.png"]}
-                rockXPositions={[0.4]}
-                rockYPositions={[0.4]}
+                rockXPositions={[0.5]}
+                rockYPositions={[0.5]}
                 rockWidths={[0.2]}
                 rockHeights={[0.2]}
                 backgroundColor={[0.3, 0.3, 0.3]} 
