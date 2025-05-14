@@ -3,10 +3,7 @@
 precision highp float;
 
 out vec2 v_uv;
-out vec3 v_rockColor;
 out float v_animationFrame;
-out float v_animationType;
-out float v_rockFloatingOffset;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
@@ -30,10 +27,6 @@ vec2 getPos(int id) {
 
 void main() {
 
-  v_rockFloatingOffset = u_rockFloatingOffset;
-
-  v_animationType = float(u_animationType);
-
   int animationLength = 32 * 24;
 
   float waterHeightDelta = 0.1;
@@ -43,7 +36,6 @@ void main() {
 
   //
 
-  v_rockColor = u_rockColor;
   vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
 

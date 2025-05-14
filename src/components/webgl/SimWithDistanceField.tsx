@@ -146,7 +146,6 @@ export default function SimWithDistanceField({
                   particleRadius={particleRadius}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
-                  // windowHeight={(windowHeight - windowWidth * 0.07)}
                   windowHeight={canvasHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
                   particleSpawnYMargin={particleSpawnYMargin}
@@ -157,7 +156,6 @@ export default function SimWithDistanceField({
                   particleImageSource={particleImageSource}
                   backgroundColor={backgroundColor}
                   rockColor={rockColor}
-                  rockImageSources={rockImageSources}
                   rockXPositions={rockXPositions}
                   rockYPositions={rockYPositions}
                   rockWidths={rockWidths}

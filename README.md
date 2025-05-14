@@ -12,13 +12,13 @@ WebGL for background animation
 ## To do:
 
 ```
-0. Add widescreen initial positions for rocks.
-1. Add particle sprite animation.
-2. Fix particle path visible when respawning.
-3. Add background textures.
-4. Add sun animation.
-5. Add moon animation.
-6. Improve particle sprites.
+0. Add widescreen initial positions for rocks. (HIGH PRIORITY, MEDIUM)
+1. Add particle sprite animation. (MEDIUM PRIORITY, HARD)
+2. Fix particle path visible when respawning. (HIGH PRIORITY, HARD)
+3. Add background textures. (HIGH PRIORITY, MEDIUM)
+4. Add sun animation. (LOW PRIORITY, MEDIUM)
+5. Add moon animation. (LOW PRIORITY, EASY)
+6. Improve particle sprites. (LOW PRIORITY, HARD)
 ```
 
 ## Environment Variables needed:
@@ -68,4 +68,10 @@ VITE_API_BASE_URL="/api"
 ```
 moon.png: https://www.goodfreephotos.com/astrophotography/close-up-of-the-moon-detail.jpg.php
 opal.png: https://www.publicdomainpictures.net/en/view-image.php?image=627379&picture=opal-gemstone-stone-clipart-png
+```
+
+## GLSL Noise:
+
+```
+3D noise function is coppied from https://stegu.github.io/webgl-noise/webdemo/
 ```

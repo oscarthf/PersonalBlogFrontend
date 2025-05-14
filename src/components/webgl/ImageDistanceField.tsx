@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
 import distanceShaderSrc from "../../shaders/createDistanceField.frag?raw";
 import fullscreenVS from "../../shaders/fullscreen.vert?raw";
-import { createProgram } from "../../util/webgl/general";
+import { 
+  createProgram, 
+  createTextureFromImageOrSize,
+  createFramebufferForSingleChannelTextures
+} from "../../util/webgl/general";
 
 interface Props {
   gl: WebGL2RenderingContext;
@@ -39,15 +43,6 @@ export default function ImageDistanceField({
         img.src = src;
       });
 
-    const createTexture = (width: number, height: number): WebGLTexture => {
-      const tex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, height, 0, gl.RED, gl.FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      return tex;
-    };
-
     loadImage(src).then((image) => {
       const width = image.width;
       const height = image.height;
@@ -57,35 +52,47 @@ export default function ImageDistanceField({
       canvas.width = width;
       canvas.height = height;
 
-      // Upload source image to texture
-      const imageTexture = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      const imageTexture = createTextureFromImageOrSize(gl,
+                                                        image,
+                                                        image.width,
+                                                        image.height,
+                                                        gl.RGBA,
+                                                        gl.RGBA,
+                                                        gl.UNSIGNED_BYTE,
+                                                        gl.NEAREST,
+                                                        gl.CLAMP_TO_EDGE);
 
-      // Output textures
-      const texDist = createTexture(width, height);
-      const texDirX = createTexture(width, height);
-      const texDirY = createTexture(width, height);
+      const writeTextures = [];
+      for (let i = 0; i < 3; i++) {
+        const tex = createTextureFromImageOrSize(gl, 
+                                                 null, 
+                                                 width, 
+                                                 height, 
+                                                 gl.R32F,
+                                                 gl.RED,
+                                                 gl.FLOAT,
+                                                 gl.NEAREST,
+                                                 gl.CLAMP_TO_EDGE);
+        writeTextures.push(tex);
+      }
 
-      // Framebuffer with multiple render targets
-      const fbo = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texDist, 0);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, texDirX, 0);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, texDirY, 0);
+      const texDist = writeTextures[0];
+      const texDirX = writeTextures[1];
+      const texDirY = writeTextures[2];
+
+      const fbo = createFramebufferForSingleChannelTextures(gl, writeTextures);
+      // const fbo = createFramebufferForSingleChannelTextures(gl, [
+      //   texDist, // assigned to COLOR_ATTACHMENT0
+      //   texDirX, // assigned to COLOR_ATTACHMENT1
+      //   texDirY, // assigned to COLOR_ATTACHMENT2
+      // ]);
+
       gl.drawBuffers([
         gl.COLOR_ATTACHMENT0,
         gl.COLOR_ATTACHMENT1,
         gl.COLOR_ATTACHMENT2,
       ]);
 
-      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-        throw new Error("Framebuffer not complete");
-      }
-
-      // Compile and run shader
       const program = createProgram(gl, fullscreenVS, distanceShaderSrc);
 
       gl.useProgram(program);

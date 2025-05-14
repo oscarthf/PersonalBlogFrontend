@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 
+import noiseShaderFunctions from "../../shaders/noise.frag?raw";
+import renderNoiseFS from "../../shaders/renderNoise.frag?raw";
 import fullscreenVS from "../../shaders/fullscreen.vert?raw";
 import physicsFS from "../../shaders/physics.frag?raw";
-import renderVS from "../../shaders/renderParticles.vert?raw";
-import renderFS from "../../shaders/renderParticles.frag?raw";
+import renderParticlesVS from "../../shaders/renderParticles.vert?raw";
+import renderParticlesFS from "../../shaders/renderParticles.frag?raw";
 import renderRockVS from "../../shaders/renderRock.vert?raw";
 import renderRockFS from "../../shaders/renderRock.frag?raw";
 import preProcessParticlesFS from "../../shaders/preProcessParticles.frag?raw";
@@ -15,7 +17,8 @@ import {
   getMousePos,
   getTouchPos,
   createProgram, 
-  createFramebuffer, 
+  createTextureFromImageOrSize,
+  createFramebufferForSingleChannelTextures, 
   createInitialParticleData, 
   createAnimationOffsetsData,
   loadSpriteImage, 
@@ -50,7 +53,6 @@ interface WebGLCanvasProps {
   particleImageSource: string;
   backgroundColor: number[];
   rockColor: number[];
-  rockImageSources: string[];
   rockXPositions: number[];
   rockYPositions: number[];
   rockWidths: number[];
@@ -81,7 +83,6 @@ export default function WebGLCanvas({
   particleImageSource,
   backgroundColor,
   rockColor,
-  rockImageSources,
   rockXPositions,
   rockYPositions,
   rockWidths,
@@ -94,8 +95,6 @@ export default function WebGLCanvas({
   repulse_particle_radius,
 }: WebGLCanvasProps) {
   useEffect(() => {
-
-    // const particleRadius = 0.04; // size of the quad in normalized coordinates (0-1)
 
     const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
 
@@ -213,8 +212,6 @@ export default function WebGLCanvas({
         const dy = clickY - rock_center_y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (
-          // clickX >= rock_x && clickX <= rock_x + rock_width &&
-          // clickY >= rock_y && clickY <= rock_y + rock_height
           distance < rock_radius
         ) {
           clickedRockIndex = i;
@@ -412,7 +409,6 @@ export default function WebGLCanvas({
       clearRockDraggings();
     }
 
-
     // === WebGL Setup ===
 
     function preProcessParticles() {
@@ -450,6 +446,33 @@ export default function WebGLCanvas({
           }
         }
       }
+    }
+
+    function renderNoise() {
+
+      gl.useProgram(renderNoiseProgram);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i]);
+
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
+
+      }
+
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_gravity"), gravity);
+      gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform3f(gl.getUniformLocation(renderNoiseProgram, "u_backgroundColor"), backgroundColor[0], backgroundColor[1], backgroundColor[2]);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
     }
 
     function stepSimulation() {
@@ -494,6 +517,8 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i] * canvasSizeWidth);
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i] * canvasSizeWidth);
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i] * canvasSizeWidth);
+
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
 
       }
 
@@ -735,21 +760,18 @@ export default function WebGLCanvas({
                                           trailSegmentBuffer);
 
       // === Framebuffer for trails ===
-      const trailTex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, trailTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvasSizeWidth, canvasSizeHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  
-      const trailFB = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, trailFB);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, trailTex, 0);
-      const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-      if (status !== gl.FRAMEBUFFER_COMPLETE) {
-        console.error("Framebuffer incomplete:", status.toString(16));
-      }
+      const trailTex = createTextureFromImageOrSize(gl,
+                                                    null,
+                                                    canvasSizeWidth,
+                                                    canvasSizeHeight,
+                                                    gl.RGBA,
+                                                    gl.RGBA,
+                                                    gl.UNSIGNED_BYTE,
+                                                    gl.LINEAR,
+                                                    gl.CLAMP_TO_EDGE);
+        
+      const trailFB = createFramebufferForSingleChannelTextures(gl, [trailTex]);
+      
 
       return { 
         trailVAO, 
@@ -761,14 +783,18 @@ export default function WebGLCanvas({
 
     function setupPreparedParticleCellData() {
 
-      const preparedParticleCellDataTex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, preparedParticleCellDataTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      const preparedParticleCellDataTex = createTextureFromImageOrSize(gl,
+                                                                       null,
+                                                                       particleTextureSize,
+                                                                       particleTextureSize,
+                                                                       gl.RGBA32F,
+                                                                       gl.RGBA,
+                                                                       gl.FLOAT,
+                                                                        gl.NEAREST,
+                                                                        gl.CLAMP_TO_EDGE);
       
-      const preparedParticleCellDataFB = createFramebuffer(gl, preparedParticleCellDataTex);
-      
+      const preparedParticleCellDataFB = createFramebufferForSingleChannelTextures(gl, [preparedParticleCellDataTex]);
+
       return { preparedParticleCellDataTex, preparedParticleCellDataFB };
 
     }
@@ -859,22 +885,30 @@ export default function WebGLCanvas({
       const fbList = [];
 
       for (let i = 0; i < realTrailHistoryLength; i++) {
-        const tex = gl.createTexture()!;
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, particleData);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        const fb = createFramebuffer(gl, tex);
+        const tex = createTextureFromImageOrSize(gl,
+                                                 particleData,
+                                                 particleTextureSize,
+                                                 particleTextureSize,
+                                                 gl.RGBA32F,
+                                                 gl.RGBA,
+                                                 gl.FLOAT,
+                                                 gl.NEAREST,
+                                                 gl.CLAMP_TO_EDGE);
+        const fb = createFramebufferForSingleChannelTextures(gl, [tex]);
         texList.push(tex);
         fbList.push(fb);
       }
 
       const offsetsData = createAnimationOffsetsData(particleTextureSize);
-      const offsetsTex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, offsetsTex);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleTextureSize, particleTextureSize, 0, gl.RGBA, gl.FLOAT, offsetsData);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      const offsetsTex = createTextureFromImageOrSize(gl,
+                                                      offsetsData,
+                                                      particleTextureSize,
+                                                      particleTextureSize,
+                                                      gl.RGBA32F,
+                                                      gl.RGBA,
+                                                      gl.FLOAT,
+                                                      gl.NEAREST,
+                                                      gl.CLAMP_TO_EDGE);
       
       return {
         offsetsTex,
@@ -932,14 +966,27 @@ export default function WebGLCanvas({
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
+    function insertShaderFunctions(shaderCode: string, functions: string) {
+      const lines = shaderCode.split('\n');
+      const precisionLineIndex = lines.findIndex(line => line.startsWith('precision'));
+      if (precisionLineIndex !== -1) {
+        lines.splice(precisionLineIndex + 1, 0, functions);
+      }
+      return lines.join('\n');
+    }
+
     function createPrograms() {
       
       const physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
-      const renderParticlesProgram = createProgram(gl, renderVS, renderFS);
+      const renderParticlesProgram = createProgram(gl, renderParticlesVS, renderParticlesFS);
       const renderRockProgram = createProgram(gl, renderRockVS, renderRockFS);
       const preProcessParticlesProgram = createProgram(gl, fullscreenVS, preProcessParticlesFS);
       const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
       const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
+
+      // insert noiseShaderFunctions after first line starting with "precision..."
+      const fullRenderNoiseFS = insertShaderFunctions(renderNoiseFS, noiseShaderFunctions);
+      const renderNoiseProgram = createProgram(gl, fullscreenVS, fullRenderNoiseFS);
 
       return {
         physicsProgram,
@@ -948,6 +995,7 @@ export default function WebGLCanvas({
         preProcessParticlesProgram,
         trailLineProgram,
         trailDisplayProgram,
+        renderNoiseProgram
       };
 
     }
@@ -959,7 +1007,8 @@ export default function WebGLCanvas({
             renderRockProgram, 
             preProcessParticlesProgram, 
             trailLineProgram, 
-            trailDisplayProgram } = createPrograms();
+            trailDisplayProgram,
+            renderNoiseProgram } = createPrograms();
 
     // === Textures ===
     
@@ -1010,7 +1059,7 @@ export default function WebGLCanvas({
       // Real render starts
 
       clearScreen();
-
+      renderNoise();
       drawRock();
       drawTrailsOnScreen();
       drawParticles();
