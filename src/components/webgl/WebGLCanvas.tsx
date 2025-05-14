@@ -457,10 +457,10 @@ export default function WebGLCanvas({
 
       for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
 
-        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i] * canvasSizeWidth);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i]);
 
         gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
 
