@@ -150,7 +150,7 @@ void main() {
       rock_floating_offset = u_rockFloatingOffset_3;
     }
 
-    if (rock_width == 0.0 || rock_height == 0.0 || rock_floating_offset == 0.0) {
+    if (rock_width == 0.0 || rock_height == 0.0 || rock_floating_offset == 1.0) {
       continue;
     }
 

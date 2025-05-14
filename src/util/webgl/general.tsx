@@ -1,4 +1,6 @@
 
+type GLContext = WebGLRenderingContext | WebGL2RenderingContext;
+
 export const getMousePos = (canvas: HTMLCanvasElement,
                             evt: MouseEvent,
                             height_over_width: number): { x: number; y: number } => {
@@ -19,18 +21,105 @@ export const getTouchPos = (canvas: HTMLCanvasElement,
     const y = y_pre * height_over_width;
     return { x, y };
 }
+export const createTextureFromImageOrSize = (
+    gl: GLContext,
+    imageData: HTMLImageElement | Float32Array | null,
+    width: number,
+    height: number,
+    internalFormat: GLenum, // e.g., gl.RGBA, gl.R32F (WebGL2)
+    format: GLenum,         // e.g., gl.RGBA
+    type: GLenum,           // e.g., gl.UNSIGNED_BYTE, gl.FLOAT
+    minMagFilter: GLenum,   // e.g., gl.LINEAR, gl.NEAREST
+    wrapMode: GLenum        // e.g., gl.CLAMP_TO_EDGE, gl.REPEAT
+): WebGLTexture => {
+    const tex = gl.createTexture();
+    if (!tex) throw new Error("Failed to create WebGL texture.");
 
-export const loadSpriteImage = (gl: WebGLRenderingContext,
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+
+    if (width > 0 && height > 0) {
+        if (imageData instanceof HTMLImageElement) {
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                internalFormat,
+                format,
+                type,
+                imageData
+            );
+        } else if (imageData instanceof Float32Array) {
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                internalFormat,
+                width,
+                height,
+                0,
+                format,
+                type,
+                imageData
+            );
+        } else {
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                internalFormat,
+                width,
+                height,
+                0,
+                format,
+                type,
+                null
+            );
+        }
+    } else {
+        if (imageData instanceof HTMLImageElement) {
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                internalFormat,
+                format,
+                type,
+                imageData
+            );
+        } else if (imageData instanceof Float32Array) {
+            console.log("imageData is Float32Array but width and height are 0");
+            throw new Error("imageData is Float32Array but width and height are 0");
+        } else {
+            console.log("imageData is null but width and height are 0");
+            throw new Error("imageData is null but width and height are 0");
+        }
+    }
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minMagFilter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, minMagFilter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapMode);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapMode);
+
+    return tex;
+};
+
+export const loadSpriteImage = (gl: GLContext,
                                 spriteImage: HTMLImageElement): WebGLTexture => {
     
-    const spriteTex = gl.createTexture();
+    // const spriteTex = gl.createTexture();
     
-    gl.bindTexture(gl.TEXTURE_2D, spriteTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, spriteImage);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // gl.bindTexture(gl.TEXTURE_2D, spriteTex);
+    // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, spriteImage);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const spriteTex = createTextureFromImageOrSize(gl,
+                                                   spriteImage,
+                                                   0,
+                                                   0,
+                                                   gl.RGBA,
+                                                   gl.RGBA,
+                                                   gl.UNSIGNED_BYTE,
+                                                   gl.NEAREST,
+                                                   gl.CLAMP_TO_EDGE);
     
     // save for use later during render
     gl.activeTexture(gl.TEXTURE1);
@@ -40,7 +129,7 @@ export const loadSpriteImage = (gl: WebGLRenderingContext,
 
 }
 
-export const createShader = (gl: WebGLRenderingContext, 
+export const createShader = (gl: GLContext, 
                               type: number,
                               source: string): WebGLProgram => {
     const shader = gl.createShader(type)!;
@@ -52,7 +141,7 @@ export const createShader = (gl: WebGLRenderingContext,
     return shader;
 }
 
-export const createProgram = (gl: WebGLRenderingContext,
+export const createProgram = (gl: GLContext,
                               vsSrc: string, 
                               fsSrc: string): WebGLProgram => {
     const program = gl.createProgram()!;
@@ -67,10 +156,21 @@ export const createProgram = (gl: WebGLRenderingContext,
     return program;
 }
 
-export const createFramebuffer = (gl: WebGLRenderingContext, texture: WebGLTexture): WebGLFramebuffer => {
+export const createFramebufferForSingleChannelTextures = (gl: GLContext, 
+                                                          textures: WebGLTexture[]): WebGLFramebuffer => {
     const fb = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    for (let i = 0; i < textures.length; i++) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, 
+                                gl.COLOR_ATTACHMENT0 + i, 
+                                gl.TEXTURE_2D, 
+                                textures[i], 
+                                0);
+    }
+    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error("Framebuffer incomplete:", status.toString(16));
+    }
     return fb;
 }
 
