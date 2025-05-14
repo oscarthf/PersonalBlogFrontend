@@ -9,7 +9,7 @@ export const getMousePos = (canvas: HTMLCanvasElement,
     const y_pre = 1 - (evt.clientY - rect.top) / rect.height;
     const y = y_pre * height_over_width;
     return { x, y };
-}
+};
 
 export const getTouchPos = (canvas: HTMLCanvasElement, 
                             evt: TouchEvent,
@@ -20,7 +20,8 @@ export const getTouchPos = (canvas: HTMLCanvasElement,
     const y_pre = 1 - (touch.clientY - rect.top) / rect.height;
     const y = y_pre * height_over_width;
     return { x, y };
-}
+};
+
 export const createTextureFromImageOrSize = (
     gl: GLContext,
     imageData: HTMLImageElement | Float32Array | null,
@@ -127,7 +128,7 @@ export const loadSpriteImage = (gl: GLContext,
 
     return spriteTex;
 
-}
+};
 
 export const createShader = (gl: GLContext, 
                               type: number,
@@ -139,7 +140,7 @@ export const createShader = (gl: GLContext,
         throw new Error("Shader compile error: " + gl.getShaderInfoLog(shader));
     }
     return shader;
-}
+};
 
 export const createProgram = (gl: GLContext,
                               vsSrc: string, 
@@ -154,7 +155,7 @@ export const createProgram = (gl: GLContext,
         throw new Error("Program link error: " + gl.getProgramInfoLog(program));
     }
     return program;
-}
+};
 
 export const createFramebufferForSingleChannelTextures = (gl: GLContext, 
                                                           textures: WebGLTexture[]): WebGLFramebuffer => {
@@ -172,7 +173,7 @@ export const createFramebufferForSingleChannelTextures = (gl: GLContext,
         console.error("Framebuffer incomplete:", status.toString(16));
     }
     return fb;
-}
+};
 
 export const createTrailIndicesAndCorners = (particleCount: number, 
                                              particleTextureSize: number,
@@ -232,7 +233,7 @@ export const createParticleIndices = (particleCount: number, particleTextureSize
 
     return indices;
 
-}
+};
 
 export const createParticleVertices = (sprite_quad_size: number) => {
     
@@ -247,8 +248,7 @@ export const createParticleVertices = (sprite_quad_size: number) => {
 
     return quadVerts;
 
-}
-
+};
 
 export const createInitialParticleData = (size: number,
                                           height_over_width: number,
@@ -264,7 +264,7 @@ export const createInitialParticleData = (size: number,
         data.set([x, y, vx, vy], i * 4);
     }
     return data;
-}
+};
 
 export const createAnimationOffsetsData = (size: number): Float32Array => {
     const data = new Float32Array(size * size * 4);
@@ -276,4 +276,4 @@ export const createAnimationOffsetsData = (size: number): Float32Array => {
         data.set([x, y, z, w], i * 4);
     }
     return data;
-}
+};

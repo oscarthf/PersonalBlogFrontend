@@ -3,10 +3,7 @@
 precision highp float;
 
 out vec2 v_uv;
-out vec3 v_rockColor;
 out float v_animationFrame;
-out float v_animationType;
-out float v_rockFloatingOffset;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
