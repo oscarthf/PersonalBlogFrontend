@@ -4,6 +4,7 @@ precision highp float;
 
 out vec2 v_uv;
 out float v_animationFrame;
+out float v_animationType;
 
 uniform float u_rock_x;
 uniform float u_rock_y;
