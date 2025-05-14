@@ -27,7 +27,10 @@ import {
   createParticleVertices 
 } from "../../util/webgl/general";
 
-const MAX_WINDOW_DIMENSION = 640;
+// const MAX_WINDOW_DIMENSION = 640;
+const MAX_WINDOW_DIMENSION = 320;
+// const MAX_WINDOW_DIMENSION = 128;
+// const MAX_WINDOW_DIMENSION = 64;
 
 const NUM_PARTICLE_FRAMES = 8;
 
@@ -139,8 +142,16 @@ export default function WebGLCanvas({
     let currentWriteIndex = 1;
 
     const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.width = windowWidth;
-    canvas.height = windowHeight;
+
+    // canvas.width = windowWidth;
+    // canvas.height = windowHeight;
+
+    canvas.width = canvasSizeWidth;
+    canvas.height = canvasSizeHeight;
+
+    // set style to windowWidth and windowHeight
+    canvas.style.width = `${windowWidth}px`;
+    canvas.style.height = `${windowHeight}px`;
 
     const rockDraggings = []
     for (let i = 0; i < rockImageTextures.length; i++) {
@@ -421,10 +432,11 @@ export default function WebGLCanvas({
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
       gl.uniform1i(gl.getUniformLocation(preProcessParticlesProgram, "u_data"), 0);
-      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_repulse_particle_radius"), repulse_particle_radius);
       gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_particleTextureSize"), particleTextureSize);
-      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeWidth"), canvasSizeWidth);
-      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeHeight"), canvasSizeHeight);
+      // gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeWidth"), canvasSizeWidth);
+      // gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeHeight"), canvasSizeHeight);
+      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -513,21 +525,21 @@ export default function WebGLCanvas({
         gl.bindTexture(gl.TEXTURE_2D, rockDirYMap);
         gl.uniform1i(gl.getUniformLocation(physicsProgram, `u_rockDirYMap_${rock_i}`), 2 + rock_i * 3 + 2);
 
-        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i] * canvasSizeWidth);
-        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i] * canvasSizeWidth);
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i]);
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i]);
 
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
 
       }
 
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), repulse_particle_radius);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnXMargin"), particleSpawnXMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeHeight"), canvasSizeHeight);
+      // gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
+      // gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeHeight"), canvasSizeHeight);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_particleTextureSize"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_force"), repulse_force);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_friction"), friction);
@@ -551,7 +563,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % trailHistoryStepSize) / trailHistoryStepSize);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), particleRadius);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), particleRadius / 2.0);
       
       ///////////
 
@@ -559,22 +571,18 @@ export default function WebGLCanvas({
       gl.bindTexture(gl.TEXTURE_2D, animationOffsetsTex);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_animationOffsets"), 0);
 
-      // Just wrote onto currentWriteIndex
+      // Just wrote onto currentWriteIndex, realWriteStartIndex makes sure intermediate control points stay in the same place
+      const texIndexRemainder = currentWriteIndex % trailHistoryStepSize;
+      const realWriteStartIndex = currentWriteIndex - texIndexRemainder + trailHistoryStepSize;
       for (let i = 0; i < trailHistoryLength; i++) {
         // TODO: reduce step size at low FPS!!!
-        let texIndex = currentWriteIndex;
-
-        if (0) {
+        let texIndex = 0;
+        if (i == 0) {
+          texIndex = (currentWriteIndex + realTrailHistoryLength) % realTrailHistoryLength;
+        } else if (i == trailHistoryLength - 1) {
           texIndex = (currentWriteIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
         } else {
-          if (i == trailHistoryLength - 1) {
-            texIndex = (currentWriteIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
-          } else if (i != 0) {
-            const texIndexRemainder = currentWriteIndex % trailHistoryStepSize;
-            const realWriteStartIndex = currentWriteIndex - texIndexRemainder + trailHistoryStepSize;
-            texIndex = (realWriteStartIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
-          }
-        
+          texIndex = (realWriteStartIndex - i * trailHistoryStepSize + realTrailHistoryLength) % realTrailHistoryLength;
         }
 
         gl.activeTexture(gl.TEXTURE1 + i);

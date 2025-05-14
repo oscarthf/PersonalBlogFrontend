@@ -28,6 +28,8 @@ vec2 getPos(int id) {
 
 void main() {
 
+  v_animationType = float(u_animationType);
+
   int animationLength = 32 * 24;
 
   float waterHeightDelta = 0.1;

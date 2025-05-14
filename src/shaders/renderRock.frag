@@ -16,8 +16,10 @@ uniform float u_rockFloatingOffset;
 void main() {
   
   vec4 color = texture(u_imageTexture, v_uv);
+
+  int animationType = int(v_animationType);
   
-  if (v_animationType == 0.0) {
+  if (animationType == 0) {// water
 
     float distance = texture(u_distanceField, v_uv).r;
 
@@ -27,8 +29,12 @@ void main() {
       color = vec4(0.0, 0.0, 0.0, 0.0);
     }
 
-  }
+  } else if (animationType == 1) {// sun
 
+  } else if (animationType == 2) {// moon
+
+  }
+  
   outColor = color;
 
 }

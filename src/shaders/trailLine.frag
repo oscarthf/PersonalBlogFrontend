@@ -15,6 +15,11 @@ void main() {
   float blue = u_trailLineColor.z;
 
   float v_fade = 1.0 - v_uv.y;
+  if (v_fade < 0.0) {
+    v_fade = 0.0;
+  } else if (v_fade > 1.0) {
+    v_fade = 1.0;
+  }
 
   if (v_animationLength < 0.5) {
     discard;
@@ -25,6 +30,11 @@ void main() {
 
   float x = (v_uv.x - frameNumber) * 2.0 - 1.0; // x is between -1 and 1
   float original_y = v_uv.y;// y is between 0 and 1
+  if (original_y < 0.0) {
+    original_y = 0.0;
+  } else if (original_y > 1.0) {
+    original_y = 1.0;
+  }
 
   float y_offset = frameNumber / v_animationLength + v_animationOffsets.x;
   float y = original_y - y_offset;

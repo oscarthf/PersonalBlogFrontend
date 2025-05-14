@@ -9,12 +9,12 @@ export default function About() {
                 trailHistoryLength={2}
                 trailHistoryStepSize={2}
                 particleRadius={0.01}
-                repulseParticleRadius={100.0}
+                repulseParticleRadius={100.0 / 640.0}
                 particleSpawnXMargin={0.0}
                 particleSpawnYMargin={0.3}
                 repulse_force={-0.001}
                 friction={1.0}
-                gravity={0.0}
+                gravity={0.0 / 640.0}
                 particleCount={81}
                 particleImageSource="/sprites/star.png"
                 rockColor={[1.0, 1.0, 0.0]} // yellow
