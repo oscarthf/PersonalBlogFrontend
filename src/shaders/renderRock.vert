@@ -3,7 +3,8 @@
 precision highp float;
 
 out vec2 v_uv;
-out float v_animationFrame;
+// out float v_animationFrame;
+out float v_frameNumber;
 out float v_animationType;
 
 uniform float u_rock_x;
@@ -29,13 +30,14 @@ vec2 getPos(int id) {
 void main() {
 
   v_animationType = float(u_animationType);
+  v_frameNumber = float(u_frameNumber);
 
-  int animationLength = 32 * 24;
+  // int animationLength = 32 * 24;
 
-  float waterHeightDelta = 0.1;
+  // float waterHeightDelta = 0.1;
   
-  float animationFrame = float(u_frameNumber % animationLength) / float(animationLength);
-  v_animationFrame = sin(animationFrame * 3.14159 * 2.0) * waterHeightDelta;
+  // float animationFrame = float(u_frameNumber % animationLength) / float(animationLength);
+  // v_animationFrame = sin(animationFrame * 3.14159 * 2.0) * waterHeightDelta;
 
   //
 
