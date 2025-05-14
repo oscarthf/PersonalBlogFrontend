@@ -3,7 +3,8 @@
 precision highp float;
 
 out vec2 v_uv;
-out float v_animationFrame;
+// out float v_animationFrame;
+out float v_frameNumber;
 out float v_animationType;
 
 uniform float u_rock_x;
@@ -28,14 +29,8 @@ vec2 getPos(int id) {
 
 void main() {
 
-  int animationLength = 32 * 24;
-
-  float waterHeightDelta = 0.1;
-  
-  float animationFrame = float(u_frameNumber % animationLength) / float(animationLength);
-  v_animationFrame = sin(animationFrame * 3.14159 * 2.0) * waterHeightDelta;
-
-  //
+  v_animationType = float(u_animationType);
+  v_frameNumber = float(u_frameNumber);
 
   vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
@@ -44,4 +39,5 @@ void main() {
   pos.y = (u_rock_y + u_rock_height * pos.y) / u_height_over_width;
   
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
+  
 }

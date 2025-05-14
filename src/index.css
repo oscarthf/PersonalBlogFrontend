@@ -18,6 +18,11 @@ nav {
     z-index: 10;
 }
 
+canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges; /* For some older browsers */
+}
+
 #nav_container {
     display: flex;
     gap: 1rem;

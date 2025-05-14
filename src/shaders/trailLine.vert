@@ -170,8 +170,8 @@ void main() {
   vec2 normalized_prev_dir = normalize(prev_dir);
 
   vec2 p0 = curr;
-  vec2 p1 = curr - normalized_curr_dir * u_particleRadius;
-  vec2 p2 = prev + normalized_prev_dir * u_particleRadius;
+  vec2 p1 = curr - normalized_curr_dir * delta_mag * 0.25;
+  vec2 p2 = prev + normalized_prev_dir * delta_mag * 0.25;
   vec2 p3 = prev;
 
   float t = float(bezier_curve_index) / float(bezierCurveLength);

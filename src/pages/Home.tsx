@@ -8,13 +8,13 @@ function Home() {
             animationType={0}
             trailHistoryLength={8}
             trailHistoryStepSize={8}
-            particleRadius={0.04}
-            repulseParticleRadius={30.0}
+            particleRadius={0.02}
+            repulseParticleRadius={30.0 / 640.0}
             particleSpawnXMargin={0.0}
             particleSpawnYMargin={1.0}
             repulse_force={0.5}
             friction={0.9}
-            gravity={0.8}
+            gravity={0.8 / 640.0}
             particleCount={49}
             particleImageSource="/sprites/wave.png"
             rockColor={[165/256, 42/256, 42/256]} // brown
