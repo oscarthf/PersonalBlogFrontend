@@ -20,8 +20,8 @@ export default function Blog() {
                 particleImageSource="/sprites/cloud.png"
                 rockColor={[1.0, 1.0, 0.0]}
                 rockImageSources={["/sprites/sun.png"]}
-                rockXPositions={[0.4]}
-                rockYPositions={[0.4]}
+                rockXPositions={[0.5]}
+                rockYPositions={[0.5]}
                 rockWidths={[0.2]}
                 rockHeights={[0.2]}
                 particleColor={[1.0, 1.0, 1.0]}
