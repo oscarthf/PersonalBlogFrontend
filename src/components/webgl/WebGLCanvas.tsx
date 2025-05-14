@@ -56,10 +56,10 @@ interface WebGLCanvasProps {
   particleImageSource: string;
   backgroundColor: number[];
   rockColor: number[];
-  rockXPositions: number[];
-  rockYPositions: number[];
-  rockWidths: number[];
-  rockHeights: number[];
+  rockXPositionsPre: number[];
+  rockYPositionsPre: number[];
+  rockWidthsPre: number[];
+  rockHeightsPre: number[];
   rockDirXMaps: WebGLTexture[];
   rockDirYMaps: WebGLTexture[];
   rockImageTextures: WebGLTexture[];
@@ -86,10 +86,10 @@ export default function WebGLCanvas({
   particleImageSource,
   backgroundColor,
   rockColor,
-  rockXPositions,
-  rockYPositions,
-  rockWidths,
-  rockHeights,
+  rockXPositionsPre,
+  rockYPositionsPre,
+  rockWidthsPre,
+  rockHeightsPre,
   rockDirXMaps,
   rockDirYMaps,
   rockImageTextures,
@@ -132,6 +132,34 @@ export default function WebGLCanvas({
     }
 
     let CANVAS_HEIGHT_OVER_WIDTH = canvasSizeHeight / canvasSizeWidth;
+
+    // rock positions and heights are entered as if height and width are 1.0
+    // resize so that they are in the range of 1.0 and (height / width)
+
+    const rockXPositions = [];
+    const rockYPositions = [];
+    const rockWidths = [];
+    const rockHeights = [];
+
+    for (let i = 0; i < rockXPositionsPre.length; i++) {
+
+      let rockWidth = rockWidthsPre[i];
+      let rockHeight = rockHeightsPre[i];
+
+      if (windowWidth > windowHeight) {
+        // make them smaller because they are scaled with the width of the canvas
+        rockWidth *= 0.5;
+        rockHeight *= 0.5;
+      }
+
+      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
+      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * CANVAS_HEIGHT_OVER_WIDTH;
+
+      rockXPositions.push(rockX);
+      rockYPositions.push(rockY);
+      rockWidths.push(rockWidth);
+      rockHeights.push(rockHeight);
+    }
 
     let lastTime = performance.now();
     let frames = 0;

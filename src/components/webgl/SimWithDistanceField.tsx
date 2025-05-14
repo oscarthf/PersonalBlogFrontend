@@ -156,10 +156,10 @@ export default function SimWithDistanceField({
                   particleImageSource={particleImageSource}
                   backgroundColor={backgroundColor}
                   rockColor={rockColor}
-                  rockXPositions={rockXPositions}
-                  rockYPositions={rockYPositions}
-                  rockWidths={rockWidths}
-                  rockHeights={rockHeights}
+                  rockXPositionsPre={rockXPositions}
+                  rockYPositionsPre={rockYPositions}
+                  rockWidthsPre={rockWidths}
+                  rockHeightsPre={rockHeights}
                   rockDirXMaps={textures.dirX}
                   rockDirYMaps={textures.dirY}
                   rockImageTextures={rockImageTextures}
