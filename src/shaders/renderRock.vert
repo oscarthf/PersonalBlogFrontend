@@ -32,15 +32,6 @@ void main() {
   v_animationType = float(u_animationType);
   v_frameNumber = float(u_frameNumber);
 
-  // int animationLength = 32 * 24;
-
-  // float waterHeightDelta = 0.1;
-  
-  // float animationFrame = float(u_frameNumber % animationLength) / float(animationLength);
-  // v_animationFrame = sin(animationFrame * 3.14159 * 2.0) * waterHeightDelta;
-
-  //
-
   vec2 pos = getPos(gl_VertexID);
   v_uv = pos;
 
@@ -48,4 +39,5 @@ void main() {
   pos.y = (u_rock_y + u_rock_height * pos.y) / u_height_over_width;
   
   gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
+  
 }

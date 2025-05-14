@@ -18,13 +18,24 @@ float lengthSquared(vec2 v) {
   return dot(v, v);
 }
 
+float atantwo(float y, float x) {
+  if (x > 0.0) return atan(y, x);
+  if (x < 0.0 && y >= 0.0) return atan(y, x) + 3.14159265358979323846;
+  if (x < 0.0 && y < 0.0) return atan(y, x) - 3.14159265358979323846;
+  if (x == 0.0 && y > 0.0) return 1.57079632679489661923;
+  if (x == 0.0 && y < 0.0) return -1.57079632679489661923;
+  return 0.0;// undefined
+}
+
 void main() {
   
-  vec4 color = texture(u_imageTexture, v_uv);
+  vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
   int animationType = int(v_animationType);
   
   if (animationType == 0) {// water
+
+    color = texture(u_imageTexture, v_uv);
 
     int animationLength = 32 * 24;
 
@@ -43,7 +54,42 @@ void main() {
 
   } else if (animationType == 1) {// sun
 
+    int animationLength = 10 * 1024;
+    float phase = mod(v_frameNumber, float(animationLength)) / float(animationLength);
+
+    vec2 sunCenter = vec2(0.5, 0.5);
+    float baseRadius = 0.25;
+
+    vec2 uvFromCenter = v_uv - sunCenter;
+    float dist = length(uvFromCenter);
+
+    if (dist > baseRadius) {
+        discard;
+    }
+
+    float angle = atantwo(uvFromCenter.y, uvFromCenter.x);
+
+    float distortion = 0.0;
+    float frequency = 10.0;
+    float amplitude = 0.02;
+
+    for (int i = 1; i <= 3; ++i) {
+      distortion += sin(angle * frequency * float(i) + phase * 6.28318 * frequency * float(i)) * amplitude / float(i);
+    }
+
+    float distortedRadius = dist + distortion;
+
+    vec2 distortedUV = vec2(
+        cos(angle) * distortedRadius + sunCenter.x,
+        sin(angle) * distortedRadius + sunCenter.y
+    );
+    
+    // color = texture(u_imageTexture, distortedUV);
+    color = vec4(1.0, 1.0, 1.0, 1.0);
+
   } else if (animationType == 2) { // moon
+
+      color = texture(u_imageTexture, v_uv);
 
       int animationLength = 1024;
       float phase = mod(v_frameNumber, float(animationLength)) / float(animationLength);
