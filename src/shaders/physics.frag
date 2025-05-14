@@ -45,21 +45,26 @@ uniform float u_rock_x_0;
 uniform float u_rock_y_0;
 uniform float u_rock_width_0;
 uniform float u_rock_height_0;
+uniform float u_rockFloatingOffset_0;
 
 uniform float u_rock_x_1;
 uniform float u_rock_y_1;
 uniform float u_rock_width_1;
 uniform float u_rock_height_1;
+uniform float u_rockFloatingOffset_1;
+
 
 uniform float u_rock_x_2;
 uniform float u_rock_y_2;
 uniform float u_rock_width_2;
 uniform float u_rock_height_2;
+uniform float u_rockFloatingOffset_2;
 
 uniform float u_rock_x_3;
 uniform float u_rock_y_3;
 uniform float u_rock_width_3;
 uniform float u_rock_height_3;
+uniform float u_rockFloatingOffset_3;
 
 float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -117,30 +122,35 @@ void main() {
     float rock_y = 0.0;
     float rock_width = 0.0;
     float rock_height = 0.0;
+    float rock_floating_offset = 0.0;
 
     if (rock_i == 0) {
       rock_x = u_rock_x_0;
       rock_y = u_rock_y_0;
       rock_width = u_rock_width_0;
       rock_height = u_rock_height_0;
+      rock_floating_offset = u_rockFloatingOffset_0;
     } else if (rock_i == 1) {
       rock_x = u_rock_x_1;
       rock_y = u_rock_y_1;
       rock_width = u_rock_width_1;
       rock_height = u_rock_height_1;
+      rock_floating_offset = u_rockFloatingOffset_1;
     } else if (rock_i == 2) {
       rock_x = u_rock_x_2;
       rock_y = u_rock_y_2;
       rock_width = u_rock_width_2;
       rock_height = u_rock_height_2;
+      rock_floating_offset = u_rockFloatingOffset_2;
     } else if (rock_i == 3) {
       rock_x = u_rock_x_3;
       rock_y = u_rock_y_3;
       rock_width = u_rock_width_3;
       rock_height = u_rock_height_3;
+      rock_floating_offset = u_rockFloatingOffset_3;
     }
 
-    if (rock_x == 0.0) {
+    if (rock_width == 0.0 || rock_height == 0.0 || rock_floating_offset == 0.0) {
       continue;
     }
 

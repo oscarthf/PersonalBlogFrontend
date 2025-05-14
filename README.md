@@ -12,13 +12,13 @@ WebGL for background animation
 ## To do:
 
 ```
-0. Add widescreen initial positions for rocks.
-1. Add particle sprite animation.
-2. Fix particle path visible when respawning.
-3. Add background textures.
-4. Add sun animation.
-5. Add moon animation.
-6. Improve particle sprites.
+0. Add widescreen initial positions for rocks. (HIGH PRIORITY, MEDIUM)
+1. Add particle sprite animation. (MEDIUM PRIORITY, HARD)
+2. Fix particle path visible when respawning. (HIGH PRIORITY, HARD)
+3. Add background textures. (HIGH PRIORITY, MEDIUM)
+4. Add sun animation. (LOW PRIORITY, MEDIUM)
+5. Add moon animation. (LOW PRIORITY, EASY)
+6. Improve particle sprites. (LOW PRIORITY, HARD)
 ```
 
 ## Environment Variables needed:

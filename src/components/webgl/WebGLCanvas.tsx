@@ -495,6 +495,8 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i] * canvasSizeWidth);
         gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i] * canvasSizeWidth);
 
+        gl.uniform1f(gl.getUniformLocation(physicsProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
+
       }
 
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), parseFloat(repulse_particle_radius.toFixed(1)));
