@@ -8,7 +8,7 @@ out vec4 outColor;
 uniform sampler2D u_data;
 uniform sampler2D u_preparedParticleCellData;
 
-// up to 3 "rocks"
+// up to 4 "rocks"
 
 uniform sampler2D u_rockDistanceField_0;
 uniform sampler2D u_rockDirXMap_0;
@@ -39,7 +39,7 @@ uniform float u_spawnXMargin;
 uniform float u_spawnYMargin;
 uniform float u_repulse_particle_radius;
 
-// up to 3 "rocks"
+// up to 4 "rocks"
 
 uniform float u_rock_x_0;
 uniform float u_rock_y_0;

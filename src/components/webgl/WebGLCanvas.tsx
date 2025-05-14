@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import noiseShaderFunctions from "../../shaders/noise.frag?raw";
+import renderNoiseFS from "../../shaders/renderNoise.frag?raw";
 import fullscreenVS from "../../shaders/fullscreen.vert?raw";
 import physicsFS from "../../shaders/physics.frag?raw";
 import renderParticlesVS from "../../shaders/renderParticles.vert?raw";
@@ -444,6 +446,33 @@ export default function WebGLCanvas({
           }
         }
       }
+    }
+
+    function renderNoise() {
+
+      gl.useProgram(renderNoiseProgram);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i] * canvasSizeWidth);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_y_${rock_i}`), rockYPositions[rock_i] * canvasSizeWidth);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_width_${rock_i}`), rockWidths[rock_i] * canvasSizeWidth);
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_height_${rock_i}`), rockHeights[rock_i] * canvasSizeWidth);
+
+        gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rockFloatingOffset_${rock_i}`), rockFloatingOffsets[rock_i]);
+
+      }
+
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_gravity"), gravity);
+      gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform3f(gl.getUniformLocation(renderNoiseProgram, "u_backgroundColor"), backgroundColor[0], backgroundColor[1], backgroundColor[2]);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
     }
 
     function stepSimulation() {
@@ -937,6 +966,15 @@ export default function WebGLCanvas({
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
+    function insertShaderFunctions(shaderCode: string, functions: string) {
+      const lines = shaderCode.split('\n');
+      const precisionLineIndex = lines.findIndex(line => line.startsWith('precision'));
+      if (precisionLineIndex !== -1) {
+        lines.splice(precisionLineIndex + 1, 0, functions);
+      }
+      return lines.join('\n');
+    }
+
     function createPrograms() {
       
       const physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
@@ -946,6 +984,10 @@ export default function WebGLCanvas({
       const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
       const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
 
+      // insert noiseShaderFunctions after first line starting with "precision..."
+      const fullRenderNoiseFS = insertShaderFunctions(renderNoiseFS, noiseShaderFunctions);
+      const renderNoiseProgram = createProgram(gl, fullscreenVS, fullRenderNoiseFS);
+
       return {
         physicsProgram,
         renderParticlesProgram,
@@ -953,6 +995,7 @@ export default function WebGLCanvas({
         preProcessParticlesProgram,
         trailLineProgram,
         trailDisplayProgram,
+        renderNoiseProgram
       };
 
     }
@@ -964,7 +1007,8 @@ export default function WebGLCanvas({
             renderRockProgram, 
             preProcessParticlesProgram, 
             trailLineProgram, 
-            trailDisplayProgram } = createPrograms();
+            trailDisplayProgram,
+            renderNoiseProgram } = createPrograms();
 
     // === Textures ===
     
@@ -1015,7 +1059,7 @@ export default function WebGLCanvas({
       // Real render starts
 
       clearScreen();
-
+      renderNoise();
       drawRock();
       drawTrailsOnScreen();
       drawParticles();
