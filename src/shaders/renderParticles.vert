@@ -14,7 +14,6 @@ uniform int u_numFrames;
 uniform vec3 u_particleColor;
 
 out vec2 v_uv;
-out vec3 v_particleColor;
 
 float atantwo(float y, float x) {
   if (x > 0.0) return atan(y, x);
@@ -43,8 +42,6 @@ void main() {
   pos.y /= u_height_over_width;
   
   v_uv = ((a_quadPos / u_particle_radius) + 1.0) * 0.5;
-
-  v_particleColor = u_particleColor;
 
   gl_Position = vec4(pos * 2.0 - 1.0 + rotatedQuad, 0.0, 1.0);
 }

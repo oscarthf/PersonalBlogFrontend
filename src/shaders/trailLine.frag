@@ -4,14 +4,15 @@ precision highp float;
 in vec4 v_animationOffsets;
 in vec2 v_uv;
 in float v_animationLength;
-in vec3 v_trailLineColor;
 out vec4 outColor;
+
+uniform vec3 u_trailLineColor;
 
 void main() {
 
-  float red = v_trailLineColor.x;
-  float green = v_trailLineColor.y;
-  float blue = v_trailLineColor.z;
+  float red = u_trailLineColor.x;
+  float green = u_trailLineColor.y;
+  float blue = u_trailLineColor.z;
 
   float v_fade = 1.0 - v_uv.y;
 
