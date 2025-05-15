@@ -564,6 +564,14 @@ export default function BackgroundAnimation({
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
 
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, readWriteTexList[currentReadIndex]);
+      gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_data"), 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, preparedParticleCellDataTex);
+      gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_preparedParticleCellData"), 1);
+
       for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
 
         gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, `u_rock_x_${rock_i}`), rockXPositions[rock_i]);
@@ -575,6 +583,8 @@ export default function BackgroundAnimation({
 
       }
 
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_repulse_particle_radius"), repulse_particle_radius);
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_particleTextureSize"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_gravity"), gravity);
       gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_height_over_width"), heightOverWidth);
