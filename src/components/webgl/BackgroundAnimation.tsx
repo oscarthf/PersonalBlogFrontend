@@ -108,27 +108,78 @@ export default function BackgroundAnimation({
   repulse_particle_radius,
 }: BackgroundAnimationProps) {
 
-  
+  let didCreatePrograms = false;
+  let spriteReady = false;
   const rockSpritesReady = [];
-  const rockImageElements = [];
+
+  let distanceFieldProgram: WebGLProgram | null = null;
+  let physicsProgram: WebGLProgram | null = null;
+  let renderParticlesProgram: WebGLProgram | null = null;
+  let renderRockProgram: WebGLProgram | null = null;
+  let preProcessParticlesProgram: WebGLProgram | null = null;
+  let trailLineProgram: WebGLProgram | null = null;
+  let trailDisplayProgram: WebGLProgram | null = null;
+  let renderNoiseProgram: WebGLProgram | null = null;
+
+  let trailVAO: WebGLVertexArrayObject | null = null;
+  let trailTex: WebGLTexture | null = null;
+  let trailFB: WebGLFramebuffer | null = null;
+
+  let preparedParticleCellDataTex: WebGLTexture | null = null;
+  let preparedParticleCellDataFB: WebGLFramebuffer | null = null;
+
+  let indexBuffer: WebGLBuffer | null = null;
+
+  let quadVBO: WebGLBuffer | null = null;
+  let spriteVAO: WebGLVertexArrayObject | null = null;
+
+  let animationOffsetsTex: WebGLTexture | null = null;
+  let readWriteTexList: WebGLTexture[] = [];
+  let readWriteFBList: WebGLFramebuffer[] = [];
+
+  let fullscreenVAO: WebGLVertexArrayObject | null = null;
+  let fullscreenVBO: WebGLBuffer | null = null;
+
+  let spriteTex: WebGLTexture | null = null;
+
+  /////////////////////
+
+  // rock positions and heights are entered as if height and width are 1.0
+  // resize so that they are in the range of 1.0 and (height / width)
+
+  const rockXPositions = [];
+  const rockYPositions = [];
+  const rockWidths = [];
+  const rockHeights = [];
+
+  const rockDraggings = []
+  const rockOffsets = []
+
+  const rockAnimationOffsets = [];
+  const rockFloatingOffsets = [];
+  const rockIsFloatings = [];
+  
   const rockImageTextures = [];
   const rockDistanceFields = [];
   const rockDirXMaps = [];
   const rockDirYMaps = [];
 
-  for (let i = 0; i < rockImageSources.length; i++) {
-
-    rockSpritesReady.push(false);
-    rockImageElements.push(null);
-    rockImageTextures.push(null);
-    rockDistanceFields.push(null);
-    rockDirXMaps.push(null);
-    rockDirYMaps.push(null);
-
-  }
-
-
   /////////
+
+  let lastTime = performance.now();
+  let frames = 0;
+  let frameNumber = 0;
+  let fps = 0;
+
+  let currentReadIndex = 0;
+  let currentWriteIndex = 1;
+
+  ////////////////////////////////
+
+  const canvas = gl.canvas as HTMLCanvasElement;
+
+  canvas.style.width = `${windowWidth}px`;
+  canvas.style.height = `${windowHeight}px`;
 
   const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
 
@@ -156,6 +207,47 @@ export default function BackgroundAnimation({
   let animationFrameId: number;
 
   const isRunningRef = useRef(true);
+
+  for (let rock_i = 0; rock_i < rockImageSources.length; rock_i++) {
+
+    rockSpritesReady.push(false);
+    rockImageTextures.push(null);
+    rockDistanceFields.push(null);
+    rockDirXMaps.push(null);
+    rockDirYMaps.push(null);
+    const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
+    rockAnimationOffsets.push(animationOffset);
+    rockFloatingOffsets.push(0);
+    rockIsFloatings.push(true);
+
+    let rockWidth = rockWidthsPre[rock_i];
+    let rockHeight = rockHeightsPre[rock_i];
+
+    if (windowWidth > windowHeight) {
+      // make them smaller because they are scaled with the width of the canvas
+      rockWidth *= 0.5;
+      rockHeight *= 0.5;
+    }
+
+    const rockX = rockXPositionsPre[rock_i] - (rockWidth / 2.0);
+    const rockY = (rockYPositionsPre[rock_i] - (rockHeight / 2.0)) * heightOverWidth;
+
+    rockXPositions.push(rockX);
+    rockYPositions.push(rockY);
+    rockWidths.push(rockWidth);
+    rockHeights.push(rockHeight);
+
+    rockDraggings.push({ 
+      current: false,
+      hasMoved: false,
+      clickX: 0,
+      clickY: 0,
+    });
+
+    rockOffsets.push({ x: 0, y: 0 });
+
+  }
+
 
   useEffect(() => {
 
@@ -771,47 +863,38 @@ export default function BackgroundAnimation({
       gl.bindBuffer(gl.ARRAY_BUFFER, trailSegmentBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, trailSegments, gl.STATIC_DRAW);
 
-      const trailVAO = setupTrailVertices(trailIndexBuffer, 
+      trailVAO = setupTrailVertices(trailIndexBuffer, 
                                           trailCornerBuffer,
-                                          trailSegmentBuffer);
+                                    trailSegmentBuffer);
 
       // === Framebuffer for trails ===
-      const trailTex = createTextureFromImageOrSize(gl,
-                                                    null,
-                                                    canvasSizeWidth,
-                                                    canvasSizeHeight,
-                                                    gl.RGBA,
-                                                    gl.RGBA,
-                                                    gl.UNSIGNED_BYTE,
-                                                    gl.LINEAR,
-                                                    gl.CLAMP_TO_EDGE);
+      trailTex = createTextureFromImageOrSize(gl,
+                                              null,
+                                              canvasSizeWidth,
+                                              canvasSizeHeight,
+                                              gl.RGBA,
+                                              gl.RGBA,
+                                              gl.UNSIGNED_BYTE,
+                                              gl.LINEAR,
+                                              gl.CLAMP_TO_EDGE);
         
-      const trailFB = createFramebufferForSingleChannelTextures(gl, [trailTex]);
-      
-
-      return { 
-        trailVAO, 
-        trailTex, 
-        trailFB 
-      };
+      trailFB = createFramebufferForSingleChannelTextures(gl, [trailTex]);
   
     }
 
     function setupPreparedParticleCellData() {
 
-      const preparedParticleCellDataTex = createTextureFromImageOrSize(gl,
-                                                                       null,
-                                                                       particleTextureSize,
-                                                                       particleTextureSize,
-                                                                       gl.RGBA32F,
-                                                                       gl.RGBA,
-                                                                       gl.FLOAT,
-                                                                        gl.NEAREST,
-                                                                        gl.CLAMP_TO_EDGE);
+      preparedParticleCellDataTex = createTextureFromImageOrSize(gl,
+                                                                  null,
+                                                                  particleTextureSize,
+                                                                  particleTextureSize,
+                                                                  gl.RGBA32F,
+                                                                  gl.RGBA,
+                                                                  gl.FLOAT,
+                                                                  gl.NEAREST,
+                                                                  gl.CLAMP_TO_EDGE);
       
-      const preparedParticleCellDataFB = createFramebufferForSingleChannelTextures(gl, [preparedParticleCellDataTex]);
-
-      return { preparedParticleCellDataTex, preparedParticleCellDataFB };
+      preparedParticleCellDataFB = createFramebufferForSingleChannelTextures(gl, [preparedParticleCellDataTex]);
 
     }
 
@@ -819,14 +902,12 @@ export default function BackgroundAnimation({
 
       const indices = createParticleIndices(particleCount, particleTextureSize);
 
-      const indexBuffer = gl.createBuffer()!;
+      indexBuffer = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, indices, gl.STATIC_DRAW);
       const aIndex = gl.getAttribLocation(renderParticlesProgram, "a_index");
       gl.enableVertexAttribArray(aIndex);
       gl.vertexAttribPointer(aIndex, 2, gl.FLOAT, false, 0, 0);
-
-      return indexBuffer;
 
     }
 
@@ -834,11 +915,11 @@ export default function BackgroundAnimation({
       
       const quadVerts = createParticleVertices(particleRadius);
 
-      const quadVBO = gl.createBuffer()!;
+      quadVBO = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
       gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
 
-      const spriteVAO = gl.createVertexArray()!;
+      spriteVAO = gl.createVertexArray()!;
       gl.bindVertexArray(spriteVAO);
 
       // layout(location = 0) - quad vertex positions
@@ -854,11 +935,6 @@ export default function BackgroundAnimation({
       gl.vertexAttribDivisor(1, 1); // per-instance
 
       gl.bindVertexArray(null);
-
-      return {
-        quadVBO,
-        spriteVAO,
-      };
 
     }
 
@@ -897,9 +973,6 @@ export default function BackgroundAnimation({
                                                      particleSpawnXMargin,
                                                      particleSpawnYMargin);
 
-      const texList = [];
-      const fbList = [];
-
       for (let i = 0; i < realTrailHistoryLength; i++) {
         const tex = createTextureFromImageOrSize(gl,
                                                  particleData,
@@ -911,12 +984,12 @@ export default function BackgroundAnimation({
                                                  gl.NEAREST,
                                                  gl.CLAMP_TO_EDGE);
         const fb = createFramebufferForSingleChannelTextures(gl, [tex]);
-        texList.push(tex);
-        fbList.push(fb);
+        readWriteTexList.push(tex);
+        readWriteFBList.push(fb);
       }
 
       const offsetsData = createAnimationOffsetsData(particleTextureSize);
-      const offsetsTex = createTextureFromImageOrSize(gl,
+      animationOffsetsTex = createTextureFromImageOrSize(gl,
                                                       offsetsData,
                                                       particleTextureSize,
                                                       particleTextureSize,
@@ -926,12 +999,6 @@ export default function BackgroundAnimation({
                                                       gl.NEAREST,
                                                       gl.CLAMP_TO_EDGE);
       
-      return {
-        offsetsTex,
-        texList,
-        fbList
-      };
-
     }
 
     function setupFullscreenQuad() {
@@ -941,16 +1008,14 @@ export default function BackgroundAnimation({
         -1,  1,  1, -1,  1,  1,
       ]);
 
-      const fullscreenVBO = gl.createBuffer()!;
+      fullscreenVBO = gl.createBuffer()!;
       gl.bindBuffer(gl.ARRAY_BUFFER, fullscreenVBO);
       gl.bufferData(gl.ARRAY_BUFFER, fullscreenVerts, gl.STATIC_DRAW);
 
-      const fullscreenVAO = gl.createVertexArray()!;
+      fullscreenVAO = gl.createVertexArray()!;
       gl.bindVertexArray(fullscreenVAO);
       gl.enableVertexAttribArray(0);
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-      return fullscreenVAO;
 
     }
 
@@ -990,31 +1055,22 @@ export default function BackgroundAnimation({
       }
       return lines.join('\n');
     }
-
+    
     function createPrograms() {
       
-      const distanceFieldProgram = createProgram(gl, fullscreenVS, distanceFieldFS);
-      const physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
-      const renderParticlesProgram = createProgram(gl, renderParticlesVS, renderParticlesFS);
-      const renderRockProgram = createProgram(gl, renderRockVS, renderRockFS);
-      const preProcessParticlesProgram = createProgram(gl, fullscreenVS, preProcessParticlesFS);
-      const trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
-      const trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
+      distanceFieldProgram = createProgram(gl, fullscreenVS, distanceFieldFS);
+      physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
+      renderParticlesProgram = createProgram(gl, renderParticlesVS, renderParticlesFS);
+      renderRockProgram = createProgram(gl, renderRockVS, renderRockFS);
+      preProcessParticlesProgram = createProgram(gl, fullscreenVS, preProcessParticlesFS);
+      trailLineProgram = createProgram(gl, trailLineVS, trailLineFS);
+      trailDisplayProgram = createProgram(gl, trailDisplayVS, trailDisplayFS);
 
       // insert noiseShaderFunctions after first line starting with "precision..."
       const fullRenderNoiseFS = insertShaderFunctions(renderNoiseFS, noiseShaderFunctions);
-      const renderNoiseProgram = createProgram(gl, fullscreenVS, fullRenderNoiseFS);
+      renderNoiseProgram = createProgram(gl, fullscreenVS, fullRenderNoiseFS);
 
-      return {
-        distanceFieldProgram,
-        physicsProgram,
-        renderParticlesProgram,
-        renderRockProgram,
-        preProcessParticlesProgram,
-        trailLineProgram,
-        trailDisplayProgram,
-        renderNoiseProgram
-      };
+      didCreatePrograms = true;
 
     }
 
@@ -1085,6 +1141,7 @@ export default function BackgroundAnimation({
 
         const width = image.width;
         const height = image.height;
+        const radius = Math.max(width, height) / 4.0;
 
         const imageTexture = createTextureFromImageOrSize(gl,
                                                           image,
@@ -1130,7 +1187,7 @@ export default function BackgroundAnimation({
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, imageTexture);
         gl.uniform1i(gl.getUniformLocation(distanceFieldProgram, "u_source"), 0);
-        gl.uniform1i(gl.getUniformLocation(distanceFieldProgram, "u_radius"), radius);
+        gl.uniform1f(gl.getUniformLocation(distanceFieldProgram, "u_radius"), radius);
         gl.uniform2f(gl.getUniformLocation(distanceFieldProgram, "u_resolution"), width, height);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -1164,189 +1221,113 @@ export default function BackgroundAnimation({
       gl.deleteProgram(trailDisplayProgram);
       gl.deleteProgram(renderNoiseProgram);
 
-      // Clean up Buffers
-      gl.deleteBuffer(indexBuffer);
-      gl.deleteBuffer(quadVBO);
-
-      // Clean up VAOs
-      gl.deleteVertexArray(spriteVAO);
-      gl.deleteVertexArray(fullscreenVAO);
       gl.deleteVertexArray(trailVAO);
-
-      // Clean up Textures
-      readWriteTexList.forEach(tex => gl.deleteTexture(tex));
-      gl.deleteTexture(animationOffsetsTex);
-      gl.deleteTexture(preparedParticleCellDataTex);
       gl.deleteTexture(trailTex);
-      if (spriteTex) gl.deleteTexture(spriteTex);
+      gl.deleteFramebuffer(trailFB);
+
+      gl.deleteTexture(preparedParticleCellDataTex);
+      gl.deleteFramebuffer(preparedParticleCellDataFB);
+
+      gl.deleteBuffer(indexBuffer);
+
+      gl.deleteBuffer(quadVBO);
+      gl.deleteVertexArray(spriteVAO);
+
+      gl.deleteTexture(animationOffsetsTex);
+      readWriteTexList.forEach(tex => gl.deleteTexture(tex));
+      readWriteFBList.forEach(fb => gl.deleteFramebuffer(fb));
+
+      gl.deleteVertexArray(fullscreenVAO);
+      gl.deleteBuffer(fullscreenVBO);
+
+      gl.deleteTexture(spriteTex);
 
       rockImageTextures.forEach(tex => tex && gl.deleteTexture(tex));
       rockDistanceFields.forEach(tex => tex && gl.deleteTexture(tex));
       rockDirXMaps.forEach(tex => tex && gl.deleteTexture(tex));
       rockDirYMaps.forEach(tex => tex && gl.deleteTexture(tex));
 
-      // Clean up Framebuffers
-      readWriteFBList.forEach(fb => gl.deleteFramebuffer(fb));
-      gl.deleteFramebuffer(preparedParticleCellDataFB);
-      gl.deleteFramebuffer(trailFB);
-
     }
 
-    const { distanceFieldProgram,
-            physicsProgram,
-            renderParticlesProgram, 
-            renderRockProgram, 
-            preProcessParticlesProgram, 
-            trailLineProgram, 
-            trailDisplayProgram,
-            renderNoiseProgram } = createPrograms();
+    const startUp = () => {
 
-    ///////////////////////
+      createPrograms();
 
-    const loadRockImage = (src: string) =>
-      new Promise<HTMLImageElement>((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.src = src;
-      });
+      const loadRockImage = (src: string) =>
+        new Promise<HTMLImageElement>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.src = src;
+        });
 
-    for (let i = 0; i < rockImageSources.length; i++) {
+      for (let i = 0; i < rockImageSources.length; i++) {
 
-      const src = rockImageSources[i];
+        const src = rockImageSources[i];
 
-      loadRockImage(src).then((image) => {
-        rockImageElements[i] = image;
-        generateRockDistanceField(image, i);
-      });
-    }
-
-
-    ////////////////////////
-
-
-    const rockAnimationOffsets = [];
-    const rockFloatingOffsets = [];
-    const rockIsFloatings = [];
-
-    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
-      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
-      rockAnimationOffsets.push(animationOffset);
-      rockFloatingOffsets.push(0);
-      rockIsFloatings.push(true);
-    }
-
-    // rock positions and heights are entered as if height and width are 1.0
-    // resize so that they are in the range of 1.0 and (height / width)
-
-    const rockXPositions = [];
-    const rockYPositions = [];
-    const rockWidths = [];
-    const rockHeights = [];
-
-    for (let i = 0; i < rockXPositionsPre.length; i++) {
-
-      let rockWidth = rockWidthsPre[i];
-      let rockHeight = rockHeightsPre[i];
-
-      if (windowWidth > windowHeight) {
-        // make them smaller because they are scaled with the width of the canvas
-        rockWidth *= 0.5;
-        rockHeight *= 0.5;
+        loadRockImage(src).then((image) => {
+          if (!isRunningRef.current) return;
+          generateRockDistanceField(image, i);
+          rockSpritesReady[i] = true;
+          checkForRealStart();
+        });
       }
 
-      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
-      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * heightOverWidth;
+      ////////////////////////
 
-      rockXPositions.push(rockX);
-      rockYPositions.push(rockY);
-      rockWidths.push(rockWidth);
-      rockHeights.push(rockHeight);
+      const spriteImage = new Image();
+      spriteImage.src = particleImageSource;
+
+      spriteImage.onload = () => {
+        if (!isRunningRef.current) return;
+        spriteTex = loadSpriteImage(gl, spriteImage);
+        spriteReady = true;
+        checkForRealStart();
+      };
+
+      //////////////////////////////
+
+      canvas.addEventListener("mousedown", onMouseDown);
+      canvas.addEventListener("mousemove", onMouseMove);
+      canvas.addEventListener("mouseup", onMouseUp);
+      canvas.addEventListener("mouseleave", onMouseUp);
+      
+      canvas.addEventListener("touchstart", onTouchStart);
+      canvas.addEventListener("touchmove", onTouchMove);
+      canvas.addEventListener("touchend", onTouchEnd);
+      canvas.addEventListener("touchcancel", onTouchEnd);
+
     }
 
-    let lastTime = performance.now();
-    let frames = 0;
-    let frameNumber = 0;
-    let fps = 0;
-
-    let currentReadIndex = 0;
-    let currentWriteIndex = 1;
-
-    const canvas = gl.canvas as HTMLCanvasElement;
-
-    canvas.width = canvasSizeWidth;
-    canvas.height = canvasSizeHeight;
-
-    canvas.style.width = `${windowWidth}px`;
-    canvas.style.height = `${windowHeight}px`;
-
-    const rockDraggings = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockDraggings.push({ 
-        current: false,
-        hasMoved: false,
-        clickX: 0,
-        clickY: 0,
-      });
+    function checkForRealStart() {
+      if (spriteReady && rockSpritesReady.every(ready => ready)) {
+        clearTimeout(timeout);
+        realStart();
+      }
     }
 
-    const rockOffsets = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockOffsets.push({ x: 0, y: 0 });
+    function realStart() {
+
+      canvas.width = canvasSizeWidth;
+      canvas.height = canvasSizeHeight;
+      
+      setupTrails();
+      setupPreparedParticleCellData();
+      setupParticleIndices();
+      setupParticleVertices(particleRadius);
+      setupSimulationTextures();
+      setupFullscreenQuad();
+
+      setupSpriteQuad();
+      
+      renderLoop(performance.now());
+          
     }
-    
-    // === Setup Textures ===
-    
-    let spriteReady = false;
-    const spriteImage = new Image();
-    let spriteTex: WebGLTexture;
-    spriteImage.src = particleImageSource;
-
-    spriteImage.onload = () => {
-      spriteTex = loadSpriteImage(gl, spriteImage);
-      spriteReady = true;
-    };
-
-    //
-
-    const { 
-      trailVAO, 
-      trailTex, 
-      trailFB 
-    } = setupTrails();
-    const { 
-      preparedParticleCellDataTex, 
-      preparedParticleCellDataFB 
-    } = setupPreparedParticleCellData();
-    const indexBuffer = setupParticleIndices();
-    const { 
-      quadVBO, 
-      spriteVAO
-    } = setupParticleVertices(particleRadius);
-    let { 
-      offsetsTex: animationOffsetsTex,
-      texList: readWriteTexList,
-      fbList: readWriteFBList
-    } = setupSimulationTextures();
-    const fullscreenVAO = setupFullscreenQuad();
-
-    setupSpriteQuad();
-
-    console.log("isRunningRef.current", isRunningRef.current);
-
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("mouseleave", onMouseUp);
-    
-    canvas.addEventListener("touchstart", onTouchStart);
-    canvas.addEventListener("touchmove", onTouchMove);
-    canvas.addEventListener("touchend", onTouchEnd);
-    canvas.addEventListener("touchcancel", onTouchEnd);
-        
+  
     const timeout = setTimeout(() => {
       isRunningRef.current = true;
-      renderLoop(performance.now());
+      // renderLoop(performance.now());
+      startUp();
     }, 50);
 
     return () => {

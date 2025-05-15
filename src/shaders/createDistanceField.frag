@@ -3,7 +3,7 @@ precision highp float;
 
 in vec2 v_uv;
 uniform sampler2D u_source;
-uniform int u_radius;
+uniform float u_radius;
 uniform vec2 u_resolution;
 
 layout(location = 0) out float outDistance;
@@ -18,10 +18,10 @@ void main() {
   float center = texture(u_source, v_uv).a;
   bool centerPixelWasTransparent = center < 0.5;
 
-  float min_x_float = -float(u_radius) * texelSize.x + v_uv.x;
-  float min_y_float = -float(u_radius) * texelSize.y + v_uv.y;
-  float max_x_float = float(u_radius) * texelSize.x + v_uv.x;
-  float max_y_float = float(u_radius) * texelSize.y + v_uv.y;
+  float min_x_float = -u_radius * texelSize.x + v_uv.x;
+  float min_y_float = -u_radius * texelSize.y + v_uv.y;
+  float max_x_float = u_radius * texelSize.x + v_uv.x;
+  float max_y_float = u_radius * texelSize.y + v_uv.y;
   if (min_x_float < 0.0) {
     min_x_float = 0.0;
   }
@@ -47,7 +47,7 @@ void main() {
       vec2 offsetPixels = vec2(float(dx), float(dy));
 
       float currentDistance = length(offsetPixels);
-      if (currentDistance > float(u_radius)) {
+      if (currentDistance > u_radius) {
         continue; // Skip pixels outside the force radius
       }
 
