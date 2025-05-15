@@ -4,7 +4,7 @@ import BlogPosts from "../components/notion/BlogPosts";
 
 export default function Blog() {
     return (
-        <div id="container">
+        <div id="page_container">
             <Background 
                 animationType={1}
                 trailHistoryLength={4}
@@ -28,9 +28,11 @@ export default function Blog() {
                 backgroundColor={[0.6, 0.8, 1.0]}
                 trailLineColor={[1.0, 1.0, 1.0]}
             />
-            <div className="main_text_container">
-                <GeneralTextContainer section={"blog"} />
-                <BlogPosts />
+            <div className="main_text_container_wrapper">
+                <div className="main_text_container">
+                    <GeneralTextContainer section={"blog"} />
+                    <BlogPosts />
+                </div>
             </div>
         </div>
     );

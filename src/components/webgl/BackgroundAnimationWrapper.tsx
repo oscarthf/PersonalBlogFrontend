@@ -74,6 +74,7 @@ export default function BackgroundAnimationWrapper({
           <>
             {[...Array(rockImageSources.length)].map((_, index) => (
               <DistanceFieldGenerator
+                key={index}
                 gl={gl}
                 src={rockImageSources[index]}
                 onResult={({ distance, dirX, dirY, mask }) => {

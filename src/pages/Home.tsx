@@ -3,7 +3,7 @@ import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 function Home() {
     return (
-    <div id="container">
+    <div id="page_container">
         <Background 
             animationType={0}
             trailHistoryLength={8}
@@ -27,8 +27,10 @@ function Home() {
             backgroundColor={[0.2, 0.4, 0.6]} 
             trailLineColor={[1.0/3.0, 2.0/3.0, 1.0]} // light blue
         />
-        <div className="main_text_container">
-            <GeneralTextContainer section={"home"} />
+        <div className="main_text_container_wrapper">
+            <div className="main_text_container">
+                <GeneralTextContainer section={"home"} />
+            </div>
         </div>
     </div>
     );

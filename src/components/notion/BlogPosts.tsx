@@ -41,7 +41,7 @@ export default function BlogPosts() {
     };
 
     return (
-        <>
+        <div className="blog-container">
             {posts.map(p => (
                 <div key={p.id} className="post-card">
                     <h2 className="post-title">{parseLinksAndBreaks(p.title)}</h2>
@@ -59,6 +59,6 @@ export default function BlogPosts() {
             )}
             <br />
             <br />
-        </>
+        </div>
     );
 }
