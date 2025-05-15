@@ -112,7 +112,7 @@ export default function SimWithDistanceField({
           <>
             {[...Array(rockImageSources.length)].map((_, index) => (
               <ImageDistanceField
-                key={index}
+                key={`${canvasKey}-${index}`}
                 gl={gl}
                 src={rockImageSources[index]}
                 onResult={({ distance, dirX, dirY, mask }) => {

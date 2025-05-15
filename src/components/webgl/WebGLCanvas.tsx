@@ -99,105 +99,6 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
-    let is_running = true;
-
-    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
-
-    const rockAnimationOffsets = [];
-    const rockFloatingOffsets = [];
-    const rockIsFloatings = [];
-
-    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
-      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
-      rockAnimationOffsets.push(animationOffset);
-      rockFloatingOffsets.push(0);
-      rockIsFloatings.push(true);
-    }
-
-    const particleTextureSize = Math.sqrt(particleCount);
-
-    let lastFrameTime = 0;
-    const targetFPS = 60;
-    const frameDuration = 1000 / targetFPS;
-
-    let canvasSizeWidth = windowWidth;
-    let canvasSizeHeight = windowHeight;
-
-    if (windowWidth > windowHeight) {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
-      canvasSizeWidth = MAX_WINDOW_DIMENSION;
-      canvasSizeHeight = windowHeight * resizeFactor;
-    } else {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
-      canvasSizeWidth = windowWidth * resizeFactor;
-      canvasSizeHeight = MAX_WINDOW_DIMENSION;
-    }
-
-    let CANVAS_HEIGHT_OVER_WIDTH = canvasSizeHeight / canvasSizeWidth;
-
-    // rock positions and heights are entered as if height and width are 1.0
-    // resize so that they are in the range of 1.0 and (height / width)
-
-    const rockXPositions = [];
-    const rockYPositions = [];
-    const rockWidths = [];
-    const rockHeights = [];
-
-    for (let i = 0; i < rockXPositionsPre.length; i++) {
-
-      let rockWidth = rockWidthsPre[i];
-      let rockHeight = rockHeightsPre[i];
-
-      if (windowWidth > windowHeight) {
-        // make them smaller because they are scaled with the width of the canvas
-        rockWidth *= 0.5;
-        rockHeight *= 0.5;
-      }
-
-      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
-      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * CANVAS_HEIGHT_OVER_WIDTH;
-
-      rockXPositions.push(rockX);
-      rockYPositions.push(rockY);
-      rockWidths.push(rockWidth);
-      rockHeights.push(rockHeight);
-    }
-
-    let lastTime = performance.now();
-    let frames = 0;
-    let frameNumber = 0;
-    let fps = 0;
-
-    let currentReadIndex = 0;
-    let currentWriteIndex = 1;
-
-    const canvas = gl.canvas as HTMLCanvasElement;
-
-    // canvas.width = windowWidth;
-    // canvas.height = windowHeight;
-
-    canvas.width = canvasSizeWidth;
-    canvas.height = canvasSizeHeight;
-
-    // set style to windowWidth and windowHeight
-    canvas.style.width = `${windowWidth}px`;
-    canvas.style.height = `${windowHeight}px`;
-
-    const rockDraggings = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockDraggings.push({ 
-        current: false,
-        hasMoved: false,
-        clickX: 0,
-        clickY: 0,
-      });
-    }
-
-    const rockOffsets = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockOffsets.push({ x: 0, y: 0 });
-    }
-    
     function clearRockDraggings() {
       for (let i = 0; i < rockDraggings.length; i++) {
         rockDraggings[i].current = false;
@@ -1041,7 +942,165 @@ export default function WebGLCanvas({
 
     }
 
-    // === Programs ===
+    function renderPass() {
+
+      // Pre-render pass
+
+      preProcessParticles();
+      stepSimulation();
+      drawTrailsToBuffer();
+      stepRocksFloating();
+
+      // Real render starts
+
+      clearScreen();
+      renderNoise();
+      drawRock();
+      drawTrailsOnScreen();
+      drawParticles();
+
+    }
+
+    function flipReadWriteParticleTextures() {
+
+      const numberOfTextures = readWriteTexList.length;
+      currentReadIndex = (currentReadIndex + 1) % numberOfTextures;
+      currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
+
+    }
+
+    function renderLoopInner() {
+
+      flipReadWriteParticleTextures();
+      
+      renderPass();
+
+      const err = gl.getError();
+      if (err !== gl.NO_ERROR) {
+        console.warn("GL Error:", err);
+        console.log("is_running", is_running);
+        console.log("spriteReady", spriteReady);
+      }
+
+      trackFPS();
+    }
+    
+    function renderLoop(now: number) {
+
+      if (!is_running) return;
+
+      if (!spriteReady) {
+        animationFrameId = requestAnimationFrame(renderLoop);
+        return;
+      }
+      
+      if (now - lastFrameTime >= frameDuration) {
+        lastFrameTime = now;
+        renderLoopInner();
+      }
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+
+    }
+
+    let animationFrameId: number;
+
+    let is_running = true;
+
+    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+
+    const rockAnimationOffsets = [];
+    const rockFloatingOffsets = [];
+    const rockIsFloatings = [];
+
+    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
+      rockAnimationOffsets.push(animationOffset);
+      rockFloatingOffsets.push(0);
+      rockIsFloatings.push(true);
+    }
+
+    const particleTextureSize = Math.sqrt(particleCount);
+
+    let lastFrameTime = 0;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
+
+    let canvasSizeWidth = windowWidth;
+    let canvasSizeHeight = windowHeight;
+
+    if (windowWidth > windowHeight) {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
+      canvasSizeWidth = MAX_WINDOW_DIMENSION;
+      canvasSizeHeight = windowHeight * resizeFactor;
+    } else {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
+      canvasSizeWidth = windowWidth * resizeFactor;
+      canvasSizeHeight = MAX_WINDOW_DIMENSION;
+    }
+
+    let CANVAS_HEIGHT_OVER_WIDTH = canvasSizeHeight / canvasSizeWidth;
+
+    // rock positions and heights are entered as if height and width are 1.0
+    // resize so that they are in the range of 1.0 and (height / width)
+
+    const rockXPositions = [];
+    const rockYPositions = [];
+    const rockWidths = [];
+    const rockHeights = [];
+
+    for (let i = 0; i < rockXPositionsPre.length; i++) {
+
+      let rockWidth = rockWidthsPre[i];
+      let rockHeight = rockHeightsPre[i];
+
+      if (windowWidth > windowHeight) {
+        // make them smaller because they are scaled with the width of the canvas
+        rockWidth *= 0.5;
+        rockHeight *= 0.5;
+      }
+
+      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
+      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * CANVAS_HEIGHT_OVER_WIDTH;
+
+      rockXPositions.push(rockX);
+      rockYPositions.push(rockY);
+      rockWidths.push(rockWidth);
+      rockHeights.push(rockHeight);
+    }
+
+    let lastTime = performance.now();
+    let frames = 0;
+    let frameNumber = 0;
+    let fps = 0;
+
+    let currentReadIndex = 0;
+    let currentWriteIndex = 1;
+
+    const canvas = gl.canvas as HTMLCanvasElement;
+
+    canvas.width = canvasSizeWidth;
+    canvas.height = canvasSizeHeight;
+
+    canvas.style.width = `${windowWidth}px`;
+    canvas.style.height = `${windowHeight}px`;
+
+    const rockDraggings = []
+    for (let i = 0; i < rockImageTextures.length; i++) {
+      rockDraggings.push({ 
+        current: false,
+        hasMoved: false,
+        clickX: 0,
+        clickY: 0,
+      });
+    }
+
+    const rockOffsets = []
+    for (let i = 0; i < rockImageTextures.length; i++) {
+      rockOffsets.push({ x: 0, y: 0 });
+    }
+    
+    // === Setup Programs ===
 
     const { physicsProgram,
             renderParticlesProgram, 
@@ -1051,7 +1110,7 @@ export default function WebGLCanvas({
             trailDisplayProgram,
             renderNoiseProgram } = createPrograms();
 
-    // === Textures ===
+    // === Setup Textures ===
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
@@ -1088,65 +1147,6 @@ export default function WebGLCanvas({
 
     setupSpriteQuad();
 
-    function renderPass() {
-
-      // Pre-render pass
-
-      preProcessParticles();
-      stepSimulation();
-      drawTrailsToBuffer();
-      stepRocksFloating();
-
-      // Real render starts
-
-      clearScreen();
-      renderNoise();
-      drawRock();
-      drawTrailsOnScreen();
-      drawParticles();
-
-    }
-
-    function flipReadWriteParticleTextures() {
-
-      const numberOfTextures = readWriteTexList.length;
-      currentReadIndex = (currentReadIndex + 1) % numberOfTextures;
-      currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
-
-    }
-
-    function renderLoopInner() {
-
-      flipReadWriteParticleTextures();
-      
-      renderPass();
-
-      const err = gl.getError();
-      if (err !== gl.NO_ERROR) console.warn("GL Error:", err);
-
-      trackFPS();
-    }
-    
-    function renderLoop(now: number) {
-
-      if (!is_running) {
-        return;
-      }
-
-      if (!spriteReady) {
-        requestAnimationFrame(renderLoop);
-        return;
-      }
-      
-      if (now - lastFrameTime >= frameDuration) {
-        lastFrameTime = now;
-        renderLoopInner();
-      }
-
-      requestAnimationFrame(renderLoop);
-
-    }
-
     if (is_running) {
       renderLoop(performance.now());
     }
@@ -1163,7 +1163,10 @@ export default function WebGLCanvas({
     
     // 👇 Cleanup when component unmounts or gl changes
     return () => {
+
       is_running = false;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseup", onMouseUp);
