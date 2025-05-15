@@ -1,10 +1,10 @@
-import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import BackgroundAnimationWrapper from "../components/webgl/BackgroundAnimationWrapper";
 import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 export default function About() {
     return (
         <div id="container">
-            <SimWithDistanceField
+            <BackgroundAnimationWrapper
                 animationType={2}
                 trailHistoryLength={2}
                 trailHistoryStepSize={2}
