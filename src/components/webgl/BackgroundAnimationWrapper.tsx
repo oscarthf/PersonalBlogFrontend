@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import ImageDistanceField from "./ImageDistanceField";
-import WebGLCanvas from "./WebGLCanvas";
+import DistanceFieldGenerator from "./DistanceFieldGenerator";
+import BackgroundAnimation from "./BackgroundAnimation";
 
-interface SimWithDistanceFieldProps {
+interface BackgroundAnimationWrapperProps {
   animationType: number;
   trailHistoryLength: number;
   trailHistoryStepSize: number;
@@ -26,7 +26,7 @@ interface SimWithDistanceFieldProps {
   trailLineColor: number[];
 }
 
-export default function SimWithDistanceField({
+export default function BackgroundAnimationWrapper({
   animationType,
   trailHistoryLength,
   trailHistoryStepSize,
@@ -48,7 +48,7 @@ export default function SimWithDistanceField({
   rockHeights,
   particleColor,
   trailLineColor,
-}: SimWithDistanceFieldProps) {
+}: BackgroundAnimationWrapperProps) {
   
   const [navBarHeight, setNavBarHeight] = useState(0);
   const [canvasHeight, setCanvasHeight] = useState(window.innerHeight); // Initialize to full height
@@ -70,23 +70,28 @@ export default function SimWithDistanceField({
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
 
+
+  const nav = document.querySelector("nav");
+  const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+  const originalCanvasHeight = window.innerHeight - navHeight;
+
   const handleResizeOrLoad = () => {
       console.log("Window resized or loaded");
-          
+
       const nav = document.querySelector("nav");
+          
       const navHeight = nav ? nav.getBoundingClientRect().height : 0;
       setNavBarHeight(navHeight);
 
       const newCanvasHeight = window.innerHeight - navHeight;
       setCanvasHeight(newCanvasHeight);
       
-      setCanvasKey(prev => prev + 1); // force WebGLCanvas to unmount and remount
+      setCanvasKey(prev => prev + 1); // force BackgroundAnimation to unmount and remount
       setGL(null); // force new context creation
+
   };
 
   useEffect(() => {
-      handleResizeOrLoad(); // Call once on mount
-
       window.addEventListener("resize", handleResizeOrLoad);
       window.addEventListener("load", handleResizeOrLoad);
 
@@ -111,7 +116,7 @@ export default function SimWithDistanceField({
         {gl && (
           <>
             {[...Array(rockImageSources.length)].map((_, index) => (
-              <ImageDistanceField
+              <DistanceFieldGenerator
                 key={`${canvasKey}-${index}`}
                 gl={gl}
                 src={rockImageSources[index]}
@@ -138,7 +143,7 @@ export default function SimWithDistanceField({
               />
             ))}
 
-              <WebGLCanvas
+              <BackgroundAnimation
                   key={canvasKey}
                   gl={gl}
                   animationType={animationType}
@@ -147,7 +152,7 @@ export default function SimWithDistanceField({
                   particleRadius={particleRadius}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
-                  windowHeight={canvasHeight}
+                  windowHeight={originalCanvasHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
