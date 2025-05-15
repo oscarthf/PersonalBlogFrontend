@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import distanceFieldFS from "../../shaders/createDistanceField.frag?raw";
 import noiseShaderFunctions from "../../shaders/noise.frag?raw";
 import renderNoiseFS from "../../shaders/renderNoise.frag?raw";
 import fullscreenVS from "../../shaders/fullscreen.vert?raw";
@@ -38,13 +39,21 @@ const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
+const loadImage = (src: string) => new Promise<HTMLImageElement> ((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.src = src;
+});
+
 interface BackgroundAnimationProps {
   gl: WebGL2RenderingContext;
   animationType: number;
   trailHistoryLength: number;
   trailHistoryStepSize: number;
   particleRadius: number;
-  rockDistanceFields: WebGLTexture[];
+  rockImageSources: string[];
+  // rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
   particleSpawnXMargin: number;
@@ -60,9 +69,9 @@ interface BackgroundAnimationProps {
   rockYPositionsPre: number[];
   rockWidthsPre: number[];
   rockHeightsPre: number[];
-  rockDirXMaps: WebGLTexture[];
-  rockDirYMaps: WebGLTexture[];
-  rockImageTextures: WebGLTexture[];
+  // rockDirXMaps: WebGLTexture[];
+  // rockDirYMaps: WebGLTexture[];
+  // rockImageTextures: WebGLTexture[];
   particleColor: number[];
   trailLineColor: number[];
   repulse_particle_radius: number;
@@ -74,7 +83,8 @@ export default function BackgroundAnimation({
   trailHistoryLength,
   trailHistoryStepSize,
   particleRadius,
-  rockDistanceFields,
+  rockImageSources,
+  // rockDistanceFields,
   windowWidth,
   windowHeight,
   particleSpawnXMargin,
@@ -90,19 +100,76 @@ export default function BackgroundAnimation({
   rockYPositionsPre,
   rockWidthsPre,
   rockHeightsPre,
-  rockDirXMaps,
-  rockDirYMaps,
-  rockImageTextures,
+  // rockDirXMaps,
+  // rockDirYMaps,
+  // rockImageTextures,
   particleColor,
   trailLineColor,
   repulse_particle_radius,
 }: BackgroundAnimationProps) {
+
+  
+  const rockSpritesReady = [];
+  const rockImageElements = [];
+  const rockImageTextures = [];
+  const rockDistanceFields = [];
+  const rockDirXMaps = [];
+  const rockDirYMaps = [];
+
+  for (let i = 0; i < rockImageSources.length; i++) {
+
+    rockSpritesReady.push(false);
+    rockImageElements.push(null);
+    rockImageTextures.push(null);
+    rockDistanceFields.push(null);
+    rockDirXMaps.push(null);
+    rockDirYMaps.push(null);
+
+  }
+
+
+  /////////
+
+  const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+
+  const particleTextureSize = Math.sqrt(particleCount);
+
+  let lastFrameTime = 0;
+  const targetFPS = 60;
+  const frameDuration = 1000 / targetFPS;
+
+  let canvasSizeWidth = windowWidth;
+  let canvasSizeHeight = windowHeight;
+
+  if (windowWidth > windowHeight) {
+    const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
+    canvasSizeWidth = MAX_WINDOW_DIMENSION;
+    canvasSizeHeight = windowHeight * resizeFactor;
+  } else {
+    const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
+    canvasSizeWidth = windowWidth * resizeFactor;
+    canvasSizeHeight = MAX_WINDOW_DIMENSION;
+  }
+
+  let heightOverWidth = canvasSizeHeight / canvasSizeWidth;
 
   let animationFrameId: number;
 
   const isRunningRef = useRef(true);
 
   useEffect(() => {
+
+    if (!gl) return;
+
+    const ext = gl.getExtension("EXT_color_buffer_float");
+    if (!ext) {
+      console.error("EXT_color_buffer_float not supported");
+      return;
+    }
+
+
+
+    ////
 
     isRunningRef.current = false;
 
@@ -926,6 +993,7 @@ export default function BackgroundAnimation({
 
     function createPrograms() {
       
+      const distanceFieldProgram = createProgram(gl, fullscreenVS, distanceFieldFS);
       const physicsProgram = createProgram(gl, fullscreenVS, physicsFS);
       const renderParticlesProgram = createProgram(gl, renderParticlesVS, renderParticlesFS);
       const renderRockProgram = createProgram(gl, renderRockVS, renderRockFS);
@@ -938,6 +1006,7 @@ export default function BackgroundAnimation({
       const renderNoiseProgram = createProgram(gl, fullscreenVS, fullRenderNoiseFS);
 
       return {
+        distanceFieldProgram,
         physicsProgram,
         renderParticlesProgram,
         renderRockProgram,
@@ -987,6 +1056,7 @@ export default function BackgroundAnimation({
         console.warn("GL Error:", err);
         console.log("isRunningRef.current", isRunningRef.current);
         console.log("spriteReady", spriteReady);
+        console.log("rockSpritesReady", rockSpritesReady);
       }
 
       trackFPS();
@@ -996,7 +1066,7 @@ export default function BackgroundAnimation({
 
       if (!isRunningRef.current) return;
 
-      if (!spriteReady) {
+      if (!spriteReady || !rockSpritesReady.every(ready => ready)) {
         animationFrameId = requestAnimationFrame(renderLoop);
         return;
       }
@@ -1007,6 +1077,68 @@ export default function BackgroundAnimation({
       }
 
       animationFrameId = requestAnimationFrame(renderLoop);
+
+    }
+
+    function generateRockDistanceField(image: HTMLImageElement,
+                                       index: number) {
+
+        const width = image.width;
+        const height = image.height;
+
+        const imageTexture = createTextureFromImageOrSize(gl,
+                                                          image,
+                                                          width,
+                                                          height,
+                                                          gl.RGBA,
+                                                          gl.RGBA,
+                                                          gl.UNSIGNED_BYTE,
+                                                          gl.NEAREST,
+                                                          gl.CLAMP_TO_EDGE);
+
+        const writeTextures = [];
+        for (let i = 0; i < 3; i++) {
+          const tex = createTextureFromImageOrSize(gl, 
+                                                  null, 
+                                                  width, 
+                                                  height, 
+                                                  gl.R32F,
+                                                  gl.RED,
+                                                  gl.FLOAT,
+                                                  gl.NEAREST,
+                                                  gl.CLAMP_TO_EDGE);
+          writeTextures.push(tex);
+        }
+
+        const texDist = writeTextures[0];
+        const texDirX = writeTextures[1];
+        const texDirY = writeTextures[2];
+
+        const fbo = createFramebufferForSingleChannelTextures(gl, writeTextures);
+
+
+        gl.drawBuffers([
+          gl.COLOR_ATTACHMENT0,
+          gl.COLOR_ATTACHMENT1,
+          gl.COLOR_ATTACHMENT2,
+        ]);
+
+        gl.useProgram(distanceFieldProgram);
+        gl.viewport(0, 0, width, height);
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+        gl.uniform1i(gl.getUniformLocation(distanceFieldProgram, "u_source"), 0);
+        gl.uniform1i(gl.getUniformLocation(distanceFieldProgram, "u_radius"), radius);
+        gl.uniform2f(gl.getUniformLocation(distanceFieldProgram, "u_resolution"), width, height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        // set the distance field texture
+        rockDistanceFields[index] = texDist;
+        rockDirXMaps[index] = texDirX;
+        rockDirYMaps[index] = texDirY;
+        rockImageTextures[index] = imageTexture;
 
     }
 
@@ -1023,6 +1155,7 @@ export default function BackgroundAnimation({
       canvas.removeEventListener("touchcancel", onTouchEnd);
 
       // Clean up Programs
+      gl.deleteProgram(distanceFieldProgram);
       gl.deleteProgram(physicsProgram);
       gl.deleteProgram(renderParticlesProgram);
       gl.deleteProgram(renderRockProgram);
@@ -1059,7 +1192,38 @@ export default function BackgroundAnimation({
 
     }
 
-    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+    const { distanceFieldProgram,
+            physicsProgram,
+            renderParticlesProgram, 
+            renderRockProgram, 
+            preProcessParticlesProgram, 
+            trailLineProgram, 
+            trailDisplayProgram,
+            renderNoiseProgram } = createPrograms();
+
+    ///////////////////////
+
+    const loadRockImage = (src: string) =>
+      new Promise<HTMLImageElement>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
+
+    for (let i = 0; i < rockImageSources.length; i++) {
+
+      const src = rockImageSources[i];
+
+      loadRockImage(src).then((image) => {
+        rockImageElements[i] = image;
+        generateRockDistanceField(image, i);
+      });
+    }
+
+
+    ////////////////////////
+
 
     const rockAnimationOffsets = [];
     const rockFloatingOffsets = [];
@@ -1071,27 +1235,6 @@ export default function BackgroundAnimation({
       rockFloatingOffsets.push(0);
       rockIsFloatings.push(true);
     }
-
-    const particleTextureSize = Math.sqrt(particleCount);
-
-    let lastFrameTime = 0;
-    const targetFPS = 60;
-    const frameDuration = 1000 / targetFPS;
-
-    let canvasSizeWidth = windowWidth;
-    let canvasSizeHeight = windowHeight;
-
-    if (windowWidth > windowHeight) {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
-      canvasSizeWidth = MAX_WINDOW_DIMENSION;
-      canvasSizeHeight = windowHeight * resizeFactor;
-    } else {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
-      canvasSizeWidth = windowWidth * resizeFactor;
-      canvasSizeHeight = MAX_WINDOW_DIMENSION;
-    }
-
-    let heightOverWidth = canvasSizeHeight / canvasSizeWidth;
 
     // rock positions and heights are entered as if height and width are 1.0
     // resize so that they are in the range of 1.0 and (height / width)
@@ -1152,22 +1295,12 @@ export default function BackgroundAnimation({
       rockOffsets.push({ x: 0, y: 0 });
     }
     
-    // === Setup Programs ===
-
-    const { physicsProgram,
-            renderParticlesProgram, 
-            renderRockProgram, 
-            preProcessParticlesProgram, 
-            trailLineProgram, 
-            trailDisplayProgram,
-            renderNoiseProgram } = createPrograms();
-
     // === Setup Textures ===
     
+    let spriteReady = false;
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
     spriteImage.src = particleImageSource;
-    let spriteReady = false;
 
     spriteImage.onload = () => {
       spriteTex = loadSpriteImage(gl, spriteImage);
@@ -1223,7 +1356,7 @@ export default function BackgroundAnimation({
       cleanUp();
     };
 
-  }, [gl, rockDistanceFields, rockDirXMaps, rockDirYMaps, rockImageTextures]);
+  }, [gl]);
 
   return null;
 }

@@ -56,23 +56,23 @@ export default function BackgroundAnimationWrapper({
   trailLineColor,
 }: BackgroundAnimationWrapperProps) {
   
-  const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
-  const [textures, setDistanceFieldTextures] = useState<{
-    distanceFields: WebGLTexture[];
-    dirX: WebGLTexture[];
-    dirY: WebGLTexture[];
-  }>({
-    distanceFields: [],
-    dirX: [],
-    dirY: [],
-  });
+  // const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
+  // const [textures, setDistanceFieldTextures] = useState<{
+  //   distanceFields: WebGLTexture[];
+  //   dirX: WebGLTexture[];
+  //   dirY: WebGLTexture[];
+  // }>({
+  //   distanceFields: [],
+  //   dirX: [],
+  //   dirY: [],
+  // });
 
   return (
     <>
       <div id="sim_container">
         {gl && (
           <>
-            {[...Array(rockImageSources.length)].map((_, index) => (
+            {/* {[...Array(rockImageSources.length)].map((_, index) => (
               <DistanceFieldGenerator
                 key={index}
                 gl={gl}
@@ -98,7 +98,7 @@ export default function BackgroundAnimationWrapper({
                 }}
 
               />
-            ))}
+            ))} */}
 
               <BackgroundAnimation
                   gl={gl}
@@ -106,7 +106,8 @@ export default function BackgroundAnimationWrapper({
                   trailHistoryLength={trailHistoryLength}
                   trailHistoryStepSize={trailHistoryStepSize}
                   particleRadius={particleRadius}
-                  rockDistanceFields={textures.distanceFields}
+                  rockImageSources={rockImageSources}
+                  // rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
                   windowHeight={windowHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
@@ -122,9 +123,9 @@ export default function BackgroundAnimationWrapper({
                   rockYPositionsPre={rockYPositions}
                   rockWidthsPre={rockWidths}
                   rockHeightsPre={rockHeights}
-                  rockDirXMaps={textures.dirX}
-                  rockDirYMaps={textures.dirY}
-                  rockImageTextures={rockImageTextures}
+                  // rockDirXMaps={textures.dirX}
+                  // rockDirYMaps={textures.dirY}
+                  // rockImageTextures={rockImageTextures}
                   particleColor={particleColor}
                   trailLineColor={trailLineColor}
                   repulse_particle_radius={repulseParticleRadius}
