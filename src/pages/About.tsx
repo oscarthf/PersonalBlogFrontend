@@ -1,10 +1,10 @@
-import BackgroundAnimationWrapper from "../components/webgl/BackgroundAnimationWrapper";
+import Background from "../components/webgl/Background";
 import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 export default function About() {
     return (
         <div id="container">
-            <BackgroundAnimationWrapper
+            <Background
                 animationType={2}
                 trailHistoryLength={2}
                 trailHistoryStepSize={2}
