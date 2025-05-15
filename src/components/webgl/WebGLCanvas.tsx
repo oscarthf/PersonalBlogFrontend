@@ -671,7 +671,10 @@ export default function WebGLCanvas({
         gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_distanceField"), 1);
 
-        let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        // let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        // let frameNumberAdjusted = (frameNumber + (rockYPositions[rock_i] / CANVAS_HEIGHT_OVER_WIDTH)) % MAX_FRAME_CYCLE_LENGTH;
+        let frameNumberAdjusted = (frameNumber + (rockYPositions[rock_i])) % MAX_FRAME_CYCLE_LENGTH;
+
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rockFloatingOffset"), rockFloatingOffsets[rock_i]);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);

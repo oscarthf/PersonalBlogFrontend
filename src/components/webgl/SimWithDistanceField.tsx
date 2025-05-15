@@ -80,7 +80,8 @@ export default function SimWithDistanceField({
       const newCanvasHeight = window.innerHeight - navHeight;
       setCanvasHeight(newCanvasHeight);
       
-      setCanvasKey(prev => prev + 1); // This will force WebGLCanvas to unmount and remount
+      setCanvasKey(prev => prev + 1); // force WebGLCanvas to unmount and remount
+      setGL(null); // force new context creation
   };
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export default function SimWithDistanceField({
       const context = canvasRef.current.getContext("webgl2") as WebGL2RenderingContext;
       if (context) setGL(context);
     }
-  }, [canvasRef]);
+  }, [canvasKey]);
 
   return (
     <>
