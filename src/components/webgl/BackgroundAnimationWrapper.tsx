@@ -50,8 +50,14 @@ export default function BackgroundAnimationWrapper({
   trailLineColor,
 }: BackgroundAnimationWrapperProps) {
   
-  const [navBarHeight, setNavBarHeight] = useState(0);
-  const [canvasHeight, setCanvasHeight] = useState(window.innerHeight); // Initialize to full height
+  const nav = document.querySelector("nav");
+  const originalNavHeight = nav ? nav.getBoundingClientRect().height : 0;
+  const originalCanvasHeight = window.innerHeight - originalNavHeight;
+  const originalCanvasWidth = window.innerWidth;
+
+  const [navBarHeight, setNavBarHeight] = useState(originalNavHeight);
+  const [canvasHeight, setCanvasHeight] = useState(originalCanvasHeight);
+  const [canvasWidth, setCanvasWidth] = useState(originalCanvasWidth);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -67,14 +73,6 @@ export default function BackgroundAnimationWrapper({
     dirY: [],
   });
 
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-
-
-  const nav = document.querySelector("nav");
-  const navHeight = nav ? nav.getBoundingClientRect().height : 0;
-  const originalCanvasHeight = window.innerHeight - navHeight;
-
   const handleResizeOrLoad = () => {
       console.log("Window resized or loaded");
 
@@ -85,6 +83,9 @@ export default function BackgroundAnimationWrapper({
 
       const newCanvasHeight = window.innerHeight - navHeight;
       setCanvasHeight(newCanvasHeight);
+
+      const newCanvasWidth = window.innerWidth;
+      setCanvasWidth(newCanvasWidth);
       
       setCanvasKey(prev => prev + 1); // force BackgroundAnimation to unmount and remount
       setGL(null); // force new context creation
@@ -151,8 +152,8 @@ export default function BackgroundAnimationWrapper({
                   trailHistoryStepSize={trailHistoryStepSize}
                   particleRadius={particleRadius}
                   rockDistanceFields={textures.distanceFields}
-                  windowWidth={windowWidth}
-                  windowHeight={originalCanvasHeight}
+                  windowWidth={canvasWidth}
+                  windowHeight={canvasHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}
