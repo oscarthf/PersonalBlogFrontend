@@ -41,6 +41,23 @@ nav {
 }
 
 @media (max-width: 800px) {
+    
+    nav {
+        padding: 0.5rem 1rem;
+    }
+
+    #nav_container {
+        justify-content: center;
+        gap: 1.5rem;
+    }
+
+    .nav_button {
+        font-size: 4vw;
+    }
+}
+
+@media (orientation: portrait) {
+
     nav {
         padding: 0.5rem 1rem;
     }
