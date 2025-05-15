@@ -160,7 +160,7 @@ void main() {
 
   if (curr_dir_is_zero || 
       (curr_is_out_of_bounds && prev_is_out_of_bounds) ||
-      (delta_mag > 0.2)) {
+      (abs(delta.x) > 0.2 || abs(delta.y) > 0.2 * u_height_over_width)) {
     v_animationLength = 0.0;
     gl_Position = vec4(2.0, 2.0, 0.0, 0.0);
     return;
