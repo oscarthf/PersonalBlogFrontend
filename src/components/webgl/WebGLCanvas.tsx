@@ -99,6 +99,8 @@ export default function WebGLCanvas({
 }: WebGLCanvasProps) {
   useEffect(() => {
 
+    let is_running = true;
+
     const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
 
     const rockAnimationOffsets = [];
@@ -1124,6 +1126,10 @@ export default function WebGLCanvas({
     
     function renderLoop(now: number) {
 
+      if (!is_running) {
+        return;
+      }
+
       if (!spriteReady) {
         requestAnimationFrame(renderLoop);
         return;
@@ -1131,7 +1137,6 @@ export default function WebGLCanvas({
       
       if (now - lastFrameTime >= frameDuration) {
         lastFrameTime = now;
-        // Your render logic here
         renderLoopInner();
       }
 
@@ -1139,7 +1144,9 @@ export default function WebGLCanvas({
 
     }
 
-    renderLoop(performance.now());
+    if (is_running) {
+      renderLoop(performance.now());
+    }
     
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mousemove", onMouseMove);
@@ -1153,6 +1160,7 @@ export default function WebGLCanvas({
     
     // 👇 Cleanup when component unmounts or gl changes
     return () => {
+      is_running = false;
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseup", onMouseUp);
@@ -1162,6 +1170,41 @@ export default function WebGLCanvas({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
+
+      // Clean up Programs
+      gl.deleteProgram(physicsProgram);
+      gl.deleteProgram(renderParticlesProgram);
+      gl.deleteProgram(renderRockProgram);
+      gl.deleteProgram(preProcessParticlesProgram);
+      gl.deleteProgram(trailLineProgram);
+      gl.deleteProgram(trailDisplayProgram);
+      gl.deleteProgram(renderNoiseProgram);
+
+      // Clean up Buffers
+      gl.deleteBuffer(indexBuffer);
+      gl.deleteBuffer(quadVBO);
+
+      // Clean up VAOs
+      gl.deleteVertexArray(spriteVAO);
+      gl.deleteVertexArray(fullscreenVAO);
+      gl.deleteVertexArray(trailVAO);
+
+      // Clean up Textures
+      readWriteTexList.forEach(tex => gl.deleteTexture(tex));
+      gl.deleteTexture(animationOffsetsTex);
+      gl.deleteTexture(preparedParticleCellDataTex);
+      gl.deleteTexture(trailTex);
+      if (spriteTex) gl.deleteTexture(spriteTex);
+
+      rockImageTextures.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDistanceFields.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDirXMaps.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDirYMaps.forEach(tex => tex && gl.deleteTexture(tex));
+
+      // Clean up Framebuffers
+      readWriteFBList.forEach(fb => gl.deleteFramebuffer(fb));
+      gl.deleteFramebuffer(preparedParticleCellDataFB);
+      gl.deleteFramebuffer(trailFB);
     };
 
   }, [gl, rockDistanceFields, rockDirXMaps, rockDirYMaps, rockImageTextures]);
