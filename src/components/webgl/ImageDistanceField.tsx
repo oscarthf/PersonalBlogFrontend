@@ -43,7 +43,18 @@ export default function ImageDistanceField({
         img.src = src;
       });
 
+    const program = createProgram(gl, fullscreenVS, distanceShaderSrc);
+    let texDist: WebGLTexture | null = null;
+    let texDirX: WebGLTexture | null = null;
+    let texDirY: WebGLTexture | null = null;
+    let fbo: WebGLFramebuffer | null = null;
+    let imageTexture: WebGLTexture | null = null;
+    let did_cancel = false;
+
     loadImage(src).then((image) => {
+
+      if (did_cancel) return;
+
       const width = image.width;
       const height = image.height;
       // should be a square image padded on all sides with 25% image width
@@ -52,15 +63,15 @@ export default function ImageDistanceField({
       canvas.width = width;
       canvas.height = height;
 
-      const imageTexture = createTextureFromImageOrSize(gl,
-                                                        image,
-                                                        image.width,
-                                                        image.height,
-                                                        gl.RGBA,
-                                                        gl.RGBA,
-                                                        gl.UNSIGNED_BYTE,
-                                                        gl.NEAREST,
-                                                        gl.CLAMP_TO_EDGE);
+      imageTexture = createTextureFromImageOrSize(gl,
+                                                  image,
+                                                  image.width,
+                                                  image.height,
+                                                  gl.RGBA,
+                                                  gl.RGBA,
+                                                  gl.UNSIGNED_BYTE,
+                                                  gl.NEAREST,
+                                                  gl.CLAMP_TO_EDGE);
 
       const writeTextures = [];
       for (let i = 0; i < 3; i++) {
@@ -76,24 +87,17 @@ export default function ImageDistanceField({
         writeTextures.push(tex);
       }
 
-      const texDist = writeTextures[0];
-      const texDirX = writeTextures[1];
-      const texDirY = writeTextures[2];
+      texDist = writeTextures[0];
+      texDirX = writeTextures[1];
+      texDirY = writeTextures[2];
 
-      const fbo = createFramebufferForSingleChannelTextures(gl, writeTextures);
-      // const fbo = createFramebufferForSingleChannelTextures(gl, [
-      //   texDist, // assigned to COLOR_ATTACHMENT0
-      //   texDirX, // assigned to COLOR_ATTACHMENT1
-      //   texDirY, // assigned to COLOR_ATTACHMENT2
-      // ]);
+      fbo = createFramebufferForSingleChannelTextures(gl, writeTextures);
 
       gl.drawBuffers([
         gl.COLOR_ATTACHMENT0,
         gl.COLOR_ATTACHMENT1,
         gl.COLOR_ATTACHMENT2,
       ]);
-
-      const program = createProgram(gl, fullscreenVS, distanceShaderSrc);
 
       gl.useProgram(program);
       gl.viewport(0, 0, width, height);
@@ -114,6 +118,11 @@ export default function ImageDistanceField({
         mask: imageTexture
       });
     });
+
+    return () => {
+      did_cancel = true;
+      gl.deleteProgram(program);
+    };
   }, [gl, src]);
 
   return null; // don't return a canvas, it already exists in the parent

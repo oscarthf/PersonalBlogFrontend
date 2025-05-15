@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { parseLinksAndBreaks } from "../../util/notion/general";
 
 type Post = {
     id: string;
@@ -43,9 +44,9 @@ export default function BlogPosts() {
         <>
             {posts.map(p => (
                 <div key={p.id} className="post-card">
-                    <h2 className="post-title">{p.title}</h2>
+                    <h2 className="post-title">{parseLinksAndBreaks(p.title)}</h2>
                     <p className="post-meta">{p.date} • {p.slug}</p>
-                    <p className="post-content">{p.content}</p>
+                    <p className="post-content">{parseLinksAndBreaks(p.content)}</p>
                 </div>
             ))}
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import noiseShaderFunctions from "../../shaders/noise.frag?raw";
 import renderNoiseFS from "../../shaders/renderNoise.frag?raw";
@@ -97,105 +97,15 @@ export default function WebGLCanvas({
   trailLineColor,
   repulse_particle_radius,
 }: WebGLCanvasProps) {
+
+  let animationFrameId: number;
+
+  const isRunningRef = useRef(true);
+
   useEffect(() => {
 
-    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+    isRunningRef.current = false;
 
-    const rockAnimationOffsets = [];
-    const rockFloatingOffsets = [];
-    const rockIsFloatings = [];
-
-    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
-      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
-      rockAnimationOffsets.push(animationOffset);
-      rockFloatingOffsets.push(0);
-      rockIsFloatings.push(true);
-    }
-
-    const particleTextureSize = Math.sqrt(particleCount);
-
-    let lastFrameTime = 0;
-    const targetFPS = 60;
-    const frameDuration = 1000 / targetFPS;
-
-    let canvasSizeWidth = windowWidth;
-    let canvasSizeHeight = windowHeight;
-
-    if (windowWidth > windowHeight) {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
-      canvasSizeWidth = MAX_WINDOW_DIMENSION;
-      canvasSizeHeight = windowHeight * resizeFactor;
-    } else {
-      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
-      canvasSizeWidth = windowWidth * resizeFactor;
-      canvasSizeHeight = MAX_WINDOW_DIMENSION;
-    }
-
-    let CANVAS_HEIGHT_OVER_WIDTH = canvasSizeHeight / canvasSizeWidth;
-
-    // rock positions and heights are entered as if height and width are 1.0
-    // resize so that they are in the range of 1.0 and (height / width)
-
-    const rockXPositions = [];
-    const rockYPositions = [];
-    const rockWidths = [];
-    const rockHeights = [];
-
-    for (let i = 0; i < rockXPositionsPre.length; i++) {
-
-      let rockWidth = rockWidthsPre[i];
-      let rockHeight = rockHeightsPre[i];
-
-      if (windowWidth > windowHeight) {
-        // make them smaller because they are scaled with the width of the canvas
-        rockWidth *= 0.5;
-        rockHeight *= 0.5;
-      }
-
-      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
-      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * CANVAS_HEIGHT_OVER_WIDTH;
-
-      rockXPositions.push(rockX);
-      rockYPositions.push(rockY);
-      rockWidths.push(rockWidth);
-      rockHeights.push(rockHeight);
-    }
-
-    let lastTime = performance.now();
-    let frames = 0;
-    let frameNumber = 0;
-    let fps = 0;
-
-    let currentReadIndex = 0;
-    let currentWriteIndex = 1;
-
-    const canvas = gl.canvas as HTMLCanvasElement;
-
-    // canvas.width = windowWidth;
-    // canvas.height = windowHeight;
-
-    canvas.width = canvasSizeWidth;
-    canvas.height = canvasSizeHeight;
-
-    // set style to windowWidth and windowHeight
-    canvas.style.width = `${windowWidth}px`;
-    canvas.style.height = `${windowHeight}px`;
-
-    const rockDraggings = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockDraggings.push({ 
-        current: false,
-        hasMoved: false,
-        clickX: 0,
-        clickY: 0,
-      });
-    }
-
-    const rockOffsets = []
-    for (let i = 0; i < rockImageTextures.length; i++) {
-      rockOffsets.push({ x: 0, y: 0 });
-    }
-    
     function clearRockDraggings() {
       for (let i = 0; i < rockDraggings.length; i++) {
         rockDraggings[i].current = false;
@@ -355,7 +265,7 @@ export default function WebGLCanvas({
     }
 
     function onMouseDown(evt: MouseEvent) {
-      const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      const { x, y } = getMousePos(canvas, evt, heightOverWidth);
       for (let i = 0; i < rockImageTextures.length; i++) {
         const rock_x = rockXPositions[i];
         const rock_y = rockYPositions[i];
@@ -386,7 +296,7 @@ export default function WebGLCanvas({
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
           rockDraggings[i].hasMoved = true;
-          const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+          const { x, y } = getMousePos(canvas, evt, heightOverWidth);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
           applyRockCollisions(i);
@@ -395,14 +305,14 @@ export default function WebGLCanvas({
     }
 
     function onMouseUp(evt: MouseEvent) {
-      const { x, y } = getMousePos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      const { x, y } = getMousePos(canvas, evt, heightOverWidth);
       checkRockClick(x, y);
       clearRockDraggings();
     }
 
     function onTouchStart(evt: TouchEvent) {
       evt.preventDefault(); // Prevent scrolling
-      const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      const { x, y } = getTouchPos(canvas, evt, heightOverWidth);
       for (let i = 0; i < rockImageTextures.length; i++) {
         const rock_x = rockXPositions[i];
         const rock_y = rockYPositions[i];
@@ -434,7 +344,7 @@ export default function WebGLCanvas({
       for (let i = 0; i < rockImageTextures.length; i++) {
         if (rockDraggings[i].current) {
           rockDraggings[i].hasMoved = true;
-          const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+          const { x, y } = getTouchPos(canvas, evt, heightOverWidth);
           rockXPositions[i] = x - rockOffsets[i].x;
           rockYPositions[i] = y - rockOffsets[i].y;
           applyRockCollisions(i);
@@ -443,7 +353,7 @@ export default function WebGLCanvas({
     }
 
     function onTouchEnd(evt: TouchEvent) {
-      const { x, y } = getTouchPos(canvas, evt, CANVAS_HEIGHT_OVER_WIDTH);
+      const { x, y } = getTouchPos(canvas, evt, heightOverWidth);
       checkRockClick(x, y);
       clearRockDraggings();
     }
@@ -464,7 +374,7 @@ export default function WebGLCanvas({
       gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_particleTextureSize"), particleTextureSize);
       // gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       // gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_canvasSizeHeight"), canvasSizeHeight);
-      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(preProcessParticlesProgram, "u_height_over_width"), heightOverWidth);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -508,7 +418,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_gravity"), gravity);
       gl.uniform1i(gl.getUniformLocation(renderNoiseProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
-      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(renderNoiseProgram, "u_height_over_width"), heightOverWidth);
       gl.uniform3f(gl.getUniformLocation(renderNoiseProgram, "u_backgroundColor"), backgroundColor[0], backgroundColor[1], backgroundColor[2]);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -563,7 +473,7 @@ export default function WebGLCanvas({
       }
 
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), repulse_particle_radius);
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), heightOverWidth);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnXMargin"), particleSpawnXMargin);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
       // gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
@@ -589,7 +499,7 @@ export default function WebGLCanvas({
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_trailHistoryLength"), trailHistoryLength);
       gl.uniform3f(gl.getUniformLocation(trailLineProgram, "u_trailLineColor"), trailLineColor[0], trailLineColor[1], trailLineColor[2]);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_bezier_remainder"), (currentWriteIndex % trailHistoryStepSize) / trailHistoryStepSize);
-      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_height_over_width"), heightOverWidth);
       gl.uniform1i(gl.getUniformLocation(trailLineProgram, "u_bezierResolution"), BEZIER_CURVE_RESOLUTION);
       gl.uniform1f(gl.getUniformLocation(trailLineProgram, "u_particleRadius"), particleRadius / 2.0);
       
@@ -669,7 +579,10 @@ export default function WebGLCanvas({
         gl.bindTexture(gl.TEXTURE_2D, rockDistanceField);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_distanceField"), 1);
 
-        let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        // let frameNumberAdjusted = (frameNumber + rockAnimationOffsets[rock_i]) % MAX_FRAME_CYCLE_LENGTH;
+        // let frameNumberAdjusted = (frameNumber + (rockYPositions[rock_i] / heightOverWidth)) % MAX_FRAME_CYCLE_LENGTH;
+        let frameNumberAdjusted = (frameNumber + (rockYPositions[rock_i])) % MAX_FRAME_CYCLE_LENGTH;
+
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_frameNumber"), frameNumberAdjusted);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rockFloatingOffset"), rockFloatingOffsets[rock_i]);
         gl.uniform1i(gl.getUniformLocation(renderRockProgram, "u_animationType"), animationType);
@@ -678,7 +591,7 @@ export default function WebGLCanvas({
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_width"), rockWidths[rock_i]);
         gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_rock_height"), rockHeights[rock_i]);
         gl.uniform3f(gl.getUniformLocation(renderRockProgram, "u_rockColor"), rockColor[0], rockColor[1], rockColor[2]);
-        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+        gl.uniform1f(gl.getUniformLocation(renderRockProgram, "u_height_over_width"), heightOverWidth);
       
         gl.drawArrays(gl.TRIANGLES, 0, 6);
           
@@ -714,7 +627,7 @@ export default function WebGLCanvas({
 
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_size"), particleTextureSize);
       gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_particle_radius"), particleRadius);
-      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), CANVAS_HEIGHT_OVER_WIDTH);
+      gl.uniform1f(gl.getUniformLocation(renderParticlesProgram, "u_height_over_width"), heightOverWidth);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_frameNumber"), frameNumber % MAX_FRAME_CYCLE_LENGTH);
       gl.uniform1i(gl.getUniformLocation(renderParticlesProgram, "u_numFrames"), NUM_PARTICLE_FRAMES);
       gl.uniform3f(gl.getUniformLocation(renderParticlesProgram, "u_particleColor"), particleColor[0], particleColor[1], particleColor[2]);
@@ -913,7 +826,7 @@ export default function WebGLCanvas({
     function setupSimulationTextures() {
 
       const particleData = createInitialParticleData(particleTextureSize,
-                                                     CANVAS_HEIGHT_OVER_WIDTH,
+                                                     heightOverWidth,
                                                      particleSpawnXMargin,
                                                      particleSpawnYMargin);
 
@@ -1036,7 +949,210 @@ export default function WebGLCanvas({
 
     }
 
-    // === Programs ===
+    function renderPass() {
+
+      // Pre-render pass
+
+      preProcessParticles();
+      stepSimulation();
+      drawTrailsToBuffer();
+      stepRocksFloating();
+
+      // Real render starts
+
+      clearScreen();
+      renderNoise();
+      drawRock();
+      drawTrailsOnScreen();
+      drawParticles();
+
+    }
+
+    function flipReadWriteParticleTextures() {
+
+      const numberOfTextures = readWriteTexList.length;
+      currentReadIndex = (currentReadIndex + 1) % numberOfTextures;
+      currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
+
+    }
+
+    function renderLoopInner() {
+
+      flipReadWriteParticleTextures();
+      
+      renderPass();
+
+      const err = gl.getError();
+      if (err !== gl.NO_ERROR) {
+        console.warn("GL Error:", err);
+        console.log("isRunningRef.current", isRunningRef.current);
+        console.log("spriteReady", spriteReady);
+      }
+
+      trackFPS();
+    }
+    
+    function renderLoop(now: number) {
+
+      if (!isRunningRef.current) return;
+
+      if (!spriteReady) {
+        animationFrameId = requestAnimationFrame(renderLoop);
+        return;
+      }
+      
+      if (now - lastFrameTime >= frameDuration) {
+        lastFrameTime = now;
+        renderLoopInner();
+      }
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+
+    }
+
+    const cleanUp = async () => {
+
+      canvas.removeEventListener("mousedown", onMouseDown);
+      canvas.removeEventListener("mousemove", onMouseMove);
+      canvas.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("mouseleave", onMouseUp);
+
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
+
+      // Clean up Programs
+      gl.deleteProgram(physicsProgram);
+      gl.deleteProgram(renderParticlesProgram);
+      gl.deleteProgram(renderRockProgram);
+      gl.deleteProgram(preProcessParticlesProgram);
+      gl.deleteProgram(trailLineProgram);
+      gl.deleteProgram(trailDisplayProgram);
+      gl.deleteProgram(renderNoiseProgram);
+
+      // Clean up Buffers
+      gl.deleteBuffer(indexBuffer);
+      gl.deleteBuffer(quadVBO);
+
+      // Clean up VAOs
+      gl.deleteVertexArray(spriteVAO);
+      gl.deleteVertexArray(fullscreenVAO);
+      gl.deleteVertexArray(trailVAO);
+
+      // Clean up Textures
+      readWriteTexList.forEach(tex => gl.deleteTexture(tex));
+      gl.deleteTexture(animationOffsetsTex);
+      gl.deleteTexture(preparedParticleCellDataTex);
+      gl.deleteTexture(trailTex);
+      if (spriteTex) gl.deleteTexture(spriteTex);
+
+      rockImageTextures.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDistanceFields.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDirXMaps.forEach(tex => tex && gl.deleteTexture(tex));
+      rockDirYMaps.forEach(tex => tex && gl.deleteTexture(tex));
+
+      // Clean up Framebuffers
+      readWriteFBList.forEach(fb => gl.deleteFramebuffer(fb));
+      gl.deleteFramebuffer(preparedParticleCellDataFB);
+      gl.deleteFramebuffer(trailFB);
+
+    }
+
+    const realTrailHistoryLength = (trailHistoryLength + 1) * trailHistoryStepSize;
+
+    const rockAnimationOffsets = [];
+    const rockFloatingOffsets = [];
+    const rockIsFloatings = [];
+
+    for (let rock_i = 0; rock_i < rockImageTextures.length; rock_i++) {
+      const animationOffset = Math.floor(Math.random() * MAX_FRAME_CYCLE_LENGTH);
+      rockAnimationOffsets.push(animationOffset);
+      rockFloatingOffsets.push(0);
+      rockIsFloatings.push(true);
+    }
+
+    const particleTextureSize = Math.sqrt(particleCount);
+
+    let lastFrameTime = 0;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
+
+    let canvasSizeWidth = windowWidth;
+    let canvasSizeHeight = windowHeight;
+
+    if (windowWidth > windowHeight) {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowWidth;
+      canvasSizeWidth = MAX_WINDOW_DIMENSION;
+      canvasSizeHeight = windowHeight * resizeFactor;
+    } else {
+      const resizeFactor = MAX_WINDOW_DIMENSION / windowHeight;
+      canvasSizeWidth = windowWidth * resizeFactor;
+      canvasSizeHeight = MAX_WINDOW_DIMENSION;
+    }
+
+    let heightOverWidth = canvasSizeHeight / canvasSizeWidth;
+
+    // rock positions and heights are entered as if height and width are 1.0
+    // resize so that they are in the range of 1.0 and (height / width)
+
+    const rockXPositions = [];
+    const rockYPositions = [];
+    const rockWidths = [];
+    const rockHeights = [];
+
+    for (let i = 0; i < rockXPositionsPre.length; i++) {
+
+      let rockWidth = rockWidthsPre[i];
+      let rockHeight = rockHeightsPre[i];
+
+      if (windowWidth > windowHeight) {
+        // make them smaller because they are scaled with the width of the canvas
+        rockWidth *= 0.5;
+        rockHeight *= 0.5;
+      }
+
+      const rockX = rockXPositionsPre[i] - (rockWidth / 2.0);
+      const rockY = (rockYPositionsPre[i] - (rockHeight / 2.0)) * heightOverWidth;
+
+      rockXPositions.push(rockX);
+      rockYPositions.push(rockY);
+      rockWidths.push(rockWidth);
+      rockHeights.push(rockHeight);
+    }
+
+    let lastTime = performance.now();
+    let frames = 0;
+    let frameNumber = 0;
+    let fps = 0;
+
+    let currentReadIndex = 0;
+    let currentWriteIndex = 1;
+
+    const canvas = gl.canvas as HTMLCanvasElement;
+
+    canvas.width = canvasSizeWidth;
+    canvas.height = canvasSizeHeight;
+
+    canvas.style.width = `${windowWidth}px`;
+    canvas.style.height = `${windowHeight}px`;
+
+    const rockDraggings = []
+    for (let i = 0; i < rockImageTextures.length; i++) {
+      rockDraggings.push({ 
+        current: false,
+        hasMoved: false,
+        clickX: 0,
+        clickY: 0,
+      });
+    }
+
+    const rockOffsets = []
+    for (let i = 0; i < rockImageTextures.length; i++) {
+      rockOffsets.push({ x: 0, y: 0 });
+    }
+    
+    // === Setup Programs ===
 
     const { physicsProgram,
             renderParticlesProgram, 
@@ -1046,7 +1162,7 @@ export default function WebGLCanvas({
             trailDisplayProgram,
             renderNoiseProgram } = createPrograms();
 
-    // === Textures ===
+    // === Setup Textures ===
     
     const spriteImage = new Image();
     let spriteTex: WebGLTexture;
@@ -1083,63 +1199,11 @@ export default function WebGLCanvas({
 
     setupSpriteQuad();
 
-    function renderPass() {
+    console.log("isRunningRef.current", isRunningRef.current);
 
-      // Pre-render pass
-
-      preProcessParticles();
-      stepSimulation();
-      drawTrailsToBuffer();
-      stepRocksFloating();
-
-      // Real render starts
-
-      clearScreen();
-      renderNoise();
-      drawRock();
-      drawTrailsOnScreen();
-      drawParticles();
-
-    }
-
-    function flipReadWriteParticleTextures() {
-
-      const numberOfTextures = readWriteTexList.length;
-      currentReadIndex = (currentReadIndex + 1) % numberOfTextures;
-      currentWriteIndex = (currentReadIndex + 1) % numberOfTextures;
-
-    }
-
-    function renderLoopInner() {
-
-      flipReadWriteParticleTextures();
-      
-      renderPass();
-
-      const err = gl.getError();
-      if (err !== gl.NO_ERROR) console.warn("GL Error:", err);
-
-      trackFPS();
-    }
-    
-    function renderLoop(now: number) {
-
-      if (!spriteReady) {
-        requestAnimationFrame(renderLoop);
-        return;
-      }
-      
-      if (now - lastFrameTime >= frameDuration) {
-        lastFrameTime = now;
-        // Your render logic here
-        renderLoopInner();
-      }
-
-      requestAnimationFrame(renderLoop);
-
-    }
-
-    renderLoop(performance.now());
+    // if (isRunningRef.current) {
+    //   renderLoop(performance.now());
+    // }
     
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mousemove", onMouseMove);
@@ -1150,18 +1214,17 @@ export default function WebGLCanvas({
     canvas.addEventListener("touchmove", onTouchMove);
     canvas.addEventListener("touchend", onTouchEnd);
     canvas.addEventListener("touchcancel", onTouchEnd);
-    
-    // 👇 Cleanup when component unmounts or gl changes
-    return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("mouseleave", onMouseUp);
+        
+    const timeout = setTimeout(() => {
+      isRunningRef.current = true;
+      renderLoop(performance.now());
+    }, 50);
 
-      canvas.removeEventListener("touchstart", onTouchStart);
-      canvas.removeEventListener("touchmove", onTouchMove);
-      canvas.removeEventListener("touchend", onTouchEnd);
-      canvas.removeEventListener("touchcancel", onTouchEnd);
+    return () => {
+      isRunningRef.current = false;
+      clearTimeout(timeout);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      cleanUp();
     };
 
   }, [gl, rockDistanceFields, rockDirXMaps, rockDirYMaps, rockImageTextures]);
