@@ -18,7 +18,7 @@ interface Props {
   }) => void;
 }
 
-export default function ImageDistanceField({ 
+export default function DistanceFieldGenerator({ 
   gl, 
   src, 
   onResult 

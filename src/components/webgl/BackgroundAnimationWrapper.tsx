@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import ImageDistanceField from "./ImageDistanceField";
-import WebGLCanvas from "./WebGLCanvas";
+import { useState } from "react";
+import DistanceFieldGenerator from "./DistanceFieldGenerator";
+import BackgroundAnimation from "./BackgroundAnimation";
 
-interface SimWithDistanceFieldProps {
+interface BackgroundAnimationWrapperProps {
+  gl: WebGL2RenderingContext | null;
+  windowWidth: number;
+  windowHeight: number;
   animationType: number;
   trailHistoryLength: number;
   trailHistoryStepSize: number;
@@ -26,7 +29,10 @@ interface SimWithDistanceFieldProps {
   trailLineColor: number[];
 }
 
-export default function SimWithDistanceField({
+export default function BackgroundAnimationWrapper({
+  gl,
+  windowWidth,
+  windowHeight,
   animationType,
   trailHistoryLength,
   trailHistoryStepSize,
@@ -48,14 +54,8 @@ export default function SimWithDistanceField({
   rockHeights,
   particleColor,
   trailLineColor,
-}: SimWithDistanceFieldProps) {
+}: BackgroundAnimationWrapperProps) {
   
-  const [navBarHeight, setNavBarHeight] = useState(0);
-  const [canvasHeight, setCanvasHeight] = useState(window.innerHeight); // Initialize to full height
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [canvasKey, setCanvasKey] = useState(0);
-  const [gl, setGL] = useState<WebGL2RenderingContext | null>(null);
   const [rockImageTextures, setRockImageTextures] = useState<WebGLTexture[]>([]);
   const [textures, setDistanceFieldTextures] = useState<{
     distanceFields: WebGLTexture[];
@@ -67,52 +67,14 @@ export default function SimWithDistanceField({
     dirY: [],
   });
 
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-
-  const handleResizeOrLoad = () => {
-      console.log("Window resized or loaded");
-          
-      const nav = document.querySelector("nav");
-      const navHeight = nav ? nav.getBoundingClientRect().height : 0;
-      setNavBarHeight(navHeight);
-
-      const newCanvasHeight = window.innerHeight - navHeight;
-      setCanvasHeight(newCanvasHeight);
-      
-      setCanvasKey(prev => prev + 1); // force WebGLCanvas to unmount and remount
-      setGL(null); // force new context creation
-  };
-
-  useEffect(() => {
-      handleResizeOrLoad(); // Call once on mount
-
-      window.addEventListener("resize", handleResizeOrLoad);
-      window.addEventListener("load", handleResizeOrLoad);
-
-      return () => {
-          window.removeEventListener("resize", handleResizeOrLoad);
-          window.removeEventListener("load", handleResizeOrLoad);
-      };
-  }, []);
-
-  useEffect(() => {
-    if (canvasRef.current && !gl) {
-      const context = canvasRef.current.getContext("webgl2") as WebGL2RenderingContext;
-      if (context) setGL(context);
-    }
-  }, [canvasKey]);
-
   return (
     <>
       <div id="sim_container">
-        <canvas ref={canvasRef} width={512} height={512} style={{ display: "block" }} />
-        
         {gl && (
           <>
             {[...Array(rockImageSources.length)].map((_, index) => (
-              <ImageDistanceField
-                key={`${canvasKey}-${index}`}
+              <DistanceFieldGenerator
+                key={index}
                 gl={gl}
                 src={rockImageSources[index]}
                 onResult={({ distance, dirX, dirY, mask }) => {
@@ -138,8 +100,7 @@ export default function SimWithDistanceField({
               />
             ))}
 
-              <WebGLCanvas
-                  key={canvasKey}
+              <BackgroundAnimation
                   gl={gl}
                   animationType={animationType}
                   trailHistoryLength={trailHistoryLength}
@@ -147,7 +108,7 @@ export default function SimWithDistanceField({
                   particleRadius={particleRadius}
                   rockDistanceFields={textures.distanceFields}
                   windowWidth={windowWidth}
-                  windowHeight={canvasHeight}
+                  windowHeight={windowHeight}
                   particleSpawnXMargin={particleSpawnXMargin}
                   particleSpawnYMargin={particleSpawnYMargin}
                   repulse_force={repulse_force}

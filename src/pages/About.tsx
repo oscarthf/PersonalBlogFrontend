@@ -1,10 +1,10 @@
-import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import Background from "../components/webgl/Background";
 import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 export default function About() {
     return (
-        <div id="container">
-            <SimWithDistanceField
+        <div id="page_container">
+            <Background
                 animationType={2}
                 trailHistoryLength={2}
                 trailHistoryStepSize={2}
@@ -27,8 +27,10 @@ export default function About() {
                 particleColor={[1.0, 1.0, 0.0]} // yellow
                 trailLineColor={[1.0, 1.0, 0.0]} // yellow
             />
-            <div className="main_text_container">
-                <GeneralTextContainer section={"about"} />
+            <div className="main_text_container_wrapper">
+                <div className="main_text_container">
+                    <GeneralTextContainer section={"about"} />
+                </div>
             </div>
         </div>
     );

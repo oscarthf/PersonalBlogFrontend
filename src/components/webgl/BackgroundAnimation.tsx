@@ -38,7 +38,7 @@ const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
-interface WebGLCanvasProps {
+interface BackgroundAnimationProps {
   gl: WebGL2RenderingContext;
   animationType: number;
   trailHistoryLength: number;
@@ -68,7 +68,7 @@ interface WebGLCanvasProps {
   repulse_particle_radius: number;
 }
 
-export default function WebGLCanvas({
+export default function BackgroundAnimation({
   gl,
   animationType,
   trailHistoryLength,
@@ -96,7 +96,7 @@ export default function WebGLCanvas({
   particleColor,
   trailLineColor,
   repulse_particle_radius,
-}: WebGLCanvasProps) {
+}: BackgroundAnimationProps) {
 
   let animationFrameId: number;
 
@@ -1201,10 +1201,6 @@ export default function WebGLCanvas({
 
     console.log("isRunningRef.current", isRunningRef.current);
 
-    // if (isRunningRef.current) {
-    //   renderLoop(performance.now());
-    // }
-    
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mouseup", onMouseUp);

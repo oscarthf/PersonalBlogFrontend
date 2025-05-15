@@ -1,10 +1,10 @@
-import SimWithDistanceField from "../components/webgl/SimWithDistanceField";
+import Background from "../components/webgl/Background";
 import GeneralTextContainer from "../components/notion/GeneralTextContainer";
 
 function Home() {
     return (
-    <div id="container">
-        <SimWithDistanceField 
+    <div id="page_container">
+        <Background 
             animationType={0}
             trailHistoryLength={8}
             trailHistoryStepSize={8}
@@ -20,15 +20,17 @@ function Home() {
             rockColor={[165/256, 42/256, 42/256]} // brown
             rockImageSources={["/sprites/opal_0.png", "/sprites/opal_1.png", "/sprites/opal_2.png", "/sprites/opal_3.png"]}
             rockXPositions={[0.4, 0.6, 0.3, 0.8]}
-            rockYPositions={[0.6, 0.55, 0.8, 0.33]}
+            rockYPositions={[0.5, 0.45, 0.7, 0.23]}
             rockWidths={[0.3, 0.22, 0.28, 0.15]}
             rockHeights={[0.3, 0.22, 0.28, 0.15]}
             particleColor={[1.0, 1.0, 1.0]} // white
             backgroundColor={[0.2, 0.4, 0.6]} 
             trailLineColor={[1.0/3.0, 2.0/3.0, 1.0]} // light blue
         />
-        <div className="main_text_container">
-            <GeneralTextContainer section={"home"} />
+        <div className="main_text_container_wrapper">
+            <div className="main_text_container">
+                <GeneralTextContainer section={"home"} />
+            </div>
         </div>
     </div>
     );
