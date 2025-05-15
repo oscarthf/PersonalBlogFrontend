@@ -7,16 +7,16 @@ export default function Blog() {
         <div id="page_container">
             <Background 
                 animationType={1}
-                trailHistoryLength={4}
-                trailHistoryStepSize={32}
+                trailHistoryLength={20}
+                trailHistoryStepSize={64}
                 particleRadius={0.08}
-                repulseParticleRadius={100.0 / 640.0}
+                repulseParticleRadius={200.0 / 640.0}
                 particleSpawnXMargin={0.3}
                 particleSpawnYMargin={0.5}
-                repulse_force={0.01}
+                repulse_force={0.004}
                 friction={0.9}
-                gravity={-0.2 / 640.0}
-                particleCount={16}
+                gravity={-0.05 / 640.0}
+                particleCount={9}
                 particleImageSource="/sprites/cloud.png"
                 rockColor={[1.0, 1.0, 0.0]}
                 rockImageSources={["/sprites/sun.png"]}

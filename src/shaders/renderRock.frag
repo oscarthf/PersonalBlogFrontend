@@ -70,11 +70,11 @@ void main() {
     float angle = atantwo(uvFromCenter.y, uvFromCenter.x);
 
     float distortion = 0.0;
-    float frequency = 10.0;
-    float amplitude = 0.02;
+    float frequency = 7.0;
+    float amplitude = 0.04;
 
     for (int i = 1; i <= 3; ++i) {
-      distortion += sin(angle * frequency * float(i) + phase * 6.28318 * frequency * float(i)) * amplitude / float(i);
+      distortion += sin((angle + phase * 6.28318) * frequency * float(i)) * amplitude / float(i);
     }
 
     float distortedRadius = dist + distortion;
@@ -84,8 +84,7 @@ void main() {
         sin(angle) * distortedRadius + sunCenter.y
     );
     
-    // color = texture(u_imageTexture, distortedUV);
-    color = vec4(1.0, 1.0, 1.0, 1.0);
+    color = texture(u_imageTexture, distortedUV);
 
   } else if (animationType == 2) { // moon
 

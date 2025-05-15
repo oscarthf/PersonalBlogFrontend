@@ -14,7 +14,7 @@ void main() {
   float green = u_trailLineColor.y;
   float blue = u_trailLineColor.z;
 
-  float v_fade = 1.0 - v_uv.y;
+  float v_fade = (1.0 - v_uv.y) * 0.5;
   if (v_fade < 0.0) {
     v_fade = 0.0;
   } else if (v_fade > 1.0) {
