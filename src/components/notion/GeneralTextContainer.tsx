@@ -34,13 +34,17 @@ export default function GeneralTextContainer({ section }: { section: Section }) 
     }, [section]);
 
     return (
-        <div className="general_text_inner">
+        <div className="general-text-inner">
             {loading ? (
                 <p>Loading...</p>
             ) : (
                 <>
-                    <h2>{parseLinksAndBreaks(textBlockHeader)}</h2>
-                    <p>{parseLinksAndBreaks(textBlockContent)}</p>
+                    <h2 className="general-text-header">
+                        {parseLinksAndBreaks(textBlockHeader)}
+                    </h2>
+                    <p className="general-text-content">
+                        {parseLinksAndBreaks(textBlockContent)}
+                    </p>
                 </>
             )}
         </div>

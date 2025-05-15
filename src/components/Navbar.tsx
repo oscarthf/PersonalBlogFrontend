@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import '../css/navbar.css';
 
 export default function Navbar({ onNavClick }: { onNavClick: (path: string) => void }) {
     const location = useLocation();

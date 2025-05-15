@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../curtain.css';
+import '../css/curtain.css';
 
 export default function Curtain({ 
     isVisible, 
