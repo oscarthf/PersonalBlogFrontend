@@ -161,7 +161,7 @@ a:active {
     line-height: 1.4;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: portrait)  {
     
     .blog-container {
         max-width: 90vw;
@@ -174,26 +174,34 @@ a:active {
     .general-text-inner {
         padding: 1rem 0 1rem 0;
     }
-
-    .general-text-header {
-        font-size: 1.25rem;
-    }
-}
-@media (orientation: portrait) {
     
-    .blog-container {
-        max-width: 90vw;
+    .page-title {
+        font-size: 4vw;
     }
 
-    .main_text_container {
-        max-width: 90vw;
+    .post-title {
+        font-size: 3vw;
     }
 
-    .general-text-inner {
-        padding: 1rem 0 1rem 0;
+    .post-meta {
+        font-size: 2vw;
+    }
+
+    .post-content {
+        font-size: 3vw;
     }
 
     .general-text-header {
-        font-size: 1.25rem;
+        font-size: 3vw;
     }
+
+    .general-text-content {
+        font-size: 3vw;
+    }
+
+    .main_text_container h1 {
+        font-size: 3vw;
+    }
+
+
 }

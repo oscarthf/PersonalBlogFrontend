@@ -40,24 +40,8 @@ nav {
     border-color: #1a73e8;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: portrait) {
     
-    nav {
-        padding: 0.5rem 1rem;
-    }
-
-    #nav_container {
-        justify-content: center;
-        gap: 1.5rem;
-    }
-
-    .nav_button {
-        font-size: 4vw;
-    }
-}
-
-@media (orientation: portrait) {
-
     nav {
         padding: 0.5rem 1rem;
     }
