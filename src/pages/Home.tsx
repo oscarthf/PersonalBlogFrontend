@@ -20,7 +20,7 @@ function Home() {
             rockColor={[165/256, 42/256, 42/256]} // brown
             rockImageSources={["/sprites/opal_0.png", "/sprites/opal_1.png", "/sprites/opal_2.png", "/sprites/opal_3.png"]}
             rockXPositions={[0.4, 0.6, 0.3, 0.8]}
-            rockYPositions={[0.5, 0.45, 0.7, 0.23]}
+            rockYPositions={[0.4, 0.35, 0.5, 0.13]}
             rockWidths={[0.3, 0.22, 0.28, 0.15]}
             rockHeights={[0.3, 0.22, 0.28, 0.15]}
             particleColor={[1.0, 1.0, 1.0]} // white

@@ -19,23 +19,18 @@ void main() {
   vec4 data = texture(u_data, fragUV);
   vec2 pos = data.xy;
 
-  // pos.x *= u_canvasSizeWidth;
-  // pos.y *= u_canvasSizeWidth;
-
   float cell_x = floor(pos.x / u_repulse_particle_radius);
   float cell_y = floor(pos.y / u_repulse_particle_radius);
 
   float left_right_mark = 0.5;
   if (pos.x < u_repulse_particle_radius) {
     left_right_mark = 0.0;
-  // } else if (pos.x > u_canvasSizeWidth - u_repulse_particle_radius) {
   } else if (pos.x > 1.0 - u_repulse_particle_radius) {
     left_right_mark = 1.0;
   }
   float up_down_mark = 0.5;
   if (pos.y < u_repulse_particle_radius) {
     up_down_mark = 0.0;
-  // } else if (pos.y > u_canvasSizeHeight - u_repulse_particle_radius) {
   } else if (pos.y > u_height_over_width - u_repulse_particle_radius) {
     up_down_mark = 1.0;
   }

@@ -32,8 +32,6 @@ uniform float u_gravity;
 uniform float u_friction;
 uniform float u_repulse_force;
 uniform float u_particleTextureSize;
-// uniform float u_canvasSizeWidth;
-// uniform float u_canvasSizeHeight;
 uniform float u_height_over_width;
 uniform float u_spawnXMargin;
 uniform float u_spawnYMargin;
@@ -93,13 +91,6 @@ void main() {
 
   vec2 pos = self.xy;
   vec2 vel = self.zw;
-
-  // === SCALE TO IMAGE SIZE
-
-  // pos.x *= u_canvasSizeWidth;
-  // pos.y *= u_canvasSizeWidth;
-  // vel.x *= u_canvasSizeWidth;
-  // vel.y *= u_canvasSizeWidth;
 
   // === GRAVITY ===
 
@@ -161,9 +152,6 @@ void main() {
 
     bool isInsideRock = (scaled_rock_pos.x >= 0.25 && scaled_rock_pos.x <= 0.75// assume padding is 25%, image is square
                         && scaled_rock_pos.y >= 0.25 && scaled_rock_pos.y <= 0.75);
-    
-    // bool isInsideRock = (scaled_rock_pos.x >= 0.0 && scaled_rock_pos.x <= 1.0// assume padding is 25%, image is square
-    //                     && scaled_rock_pos.y >= 0.0 && scaled_rock_pos.y <= 1.0);
     
     if (isInsideRock) {
 
@@ -236,9 +224,6 @@ void main() {
       vec4 other = readParticle(ivec2(x, y));
 
       vec2 other_pos = other.xy;
-
-      // other_pos.x *= u_canvasSizeWidth;
-      // other_pos.y *= u_canvasSizeWidth;
 
       vec4 otherPreparedParticleCellData = getPreparedParticleCellData(ivec2(x, y));
 
@@ -351,13 +336,6 @@ void main() {
   // === POSITION INTEGRATION ===
 
   pos += vel;
-
-  // // === SCALE BACK TO 0 - 1
-
-  // pos.x /= u_canvasSizeWidth;
-  // pos.y /= u_canvasSizeWidth;
-  // vel.x /= u_canvasSizeWidth;
-  // vel.y /= u_canvasSizeWidth;
 
   // === BOUNDING BOX ===
 

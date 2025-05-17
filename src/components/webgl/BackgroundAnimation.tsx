@@ -39,13 +39,6 @@ const MAX_FRAME_CYCLE_LENGTH = 60 * 60 * 60 * 24; // 6 hours at 60 FPS
 
 const BEZIER_CURVE_RESOLUTION = 4;
 
-const loadImage = (src: string) => new Promise<HTMLImageElement> ((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.src = src;
-});
-
 interface BackgroundAnimationProps {
   gl: WebGL2RenderingContext;
   animationType: number;
@@ -53,7 +46,6 @@ interface BackgroundAnimationProps {
   trailHistoryStepSize: number;
   particleRadius: number;
   rockImageSources: string[];
-  // rockDistanceFields: WebGLTexture[];
   windowWidth: number;
   windowHeight: number;
   particleSpawnXMargin: number;
@@ -69,9 +61,6 @@ interface BackgroundAnimationProps {
   rockYPositionsPre: number[];
   rockWidthsPre: number[];
   rockHeightsPre: number[];
-  // rockDirXMaps: WebGLTexture[];
-  // rockDirYMaps: WebGLTexture[];
-  // rockImageTextures: WebGLTexture[];
   particleColor: number[];
   trailLineColor: number[];
   repulse_particle_radius: number;
@@ -84,7 +73,6 @@ export default function BackgroundAnimation({
   trailHistoryStepSize,
   particleRadius,
   rockImageSources,
-  // rockDistanceFields,
   windowWidth,
   windowHeight,
   particleSpawnXMargin,
@@ -100,9 +88,6 @@ export default function BackgroundAnimation({
   rockYPositionsPre,
   rockWidthsPre,
   rockHeightsPre,
-  // rockDirXMaps,
-  // rockDirYMaps,
-  // rockImageTextures,
   particleColor,
   trailLineColor,
   repulse_particle_radius,
@@ -644,7 +629,7 @@ export default function BackgroundAnimation({
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_repulse_particle_radius"), repulse_particle_radius);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_height_over_width"), heightOverWidth);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnXMargin"), particleSpawnXMargin);
-      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin);
+      gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_spawnYMargin"), particleSpawnYMargin * heightOverWidth);
       // gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeWidth"), canvasSizeWidth);
       // gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_canvasSizeHeight"), canvasSizeHeight);
       gl.uniform1f(gl.getUniformLocation(physicsProgram, "u_particleTextureSize"), particleTextureSize);
